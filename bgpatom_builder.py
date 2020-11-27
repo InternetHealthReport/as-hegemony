@@ -3,7 +3,7 @@ from confluent_kafka import Consumer
 from particles_handler import ParticlesHandler
 
 import logging
-import stream
+import bgpdata
 import utils
 
 
@@ -34,7 +34,7 @@ class BGPAtomBuilder:
         self.prefix_to_atom_id[prefix] += ["*"] * (target_size-current_size)
 
     def read_ribs_and_add_particles_to_atom(self, consumer: Consumer, timestamp: int):
-        for element in stream.consume_rib_message_at(consumer, timestamp):
+        for element in bgpdata.consume_rib_message_at(consumer, timestamp):
             peer_address = element["peer_address"]
             as_path = element["fields"]["as-path"]
             prefix = element["fields"]["prefix"]
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     offset_datetime = utils.str2dt(offset_time_string, utils.DATETIME_STRING_FORMAT)
     offset_timestamp = utils.dt2ts(offset_datetime)
 
-    ribs_consumer = stream.create_consumer_and_set_offset(BGP_DATA_TOPIC, offset_timestamp)
+    ribs_consumer = bgpdata.create_consumer_and_set_offset(BGP_DATA_TOPIC, offset_timestamp)
     bgpatom_builder = BGPAtomBuilder()
     bgpatom_builder.read_ribs_and_add_particles_to_atom(ribs_consumer, offset_timestamp)
     bgpatom_builder.remove_none_full_fleet_particles(BGPATOM_FULL_FLEET_THRESHOLD)
