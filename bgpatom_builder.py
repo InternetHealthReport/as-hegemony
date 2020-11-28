@@ -8,19 +8,8 @@ import json
 import utils
 
 
-def remove_path_prepending(prepended_as_path: list):
-    prev = ""
-    as_path = list()
-    for asn in prepended_as_path:
-        if asn == prev:
-            continue
-        as_path.append(asn)
-        prev = asn
-    return as_path
-
-
 def atom_aspath_encoding(as_path: str):
-    non_prepended_as_path = remove_path_prepending(as_path.split(" "))
+    non_prepended_as_path = utils.remove_path_prepending(as_path.split(" "))
     return tuple(non_prepended_as_path[:-1])
 
 

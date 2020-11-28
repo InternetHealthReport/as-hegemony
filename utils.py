@@ -19,3 +19,14 @@ def str2dt(s, fmt="%Y-%m-%d %H:%M:%S %Z"):
 
 def ts2dt(ts):
     return datetime.datetime.fromtimestamp(ts + datetime.datetime(1970, 1, 1).timestamp())
+
+
+def remove_path_prepending(prepended_aspath: list):
+    prev = ""
+    aspath = list()
+    for asn in prepended_aspath:
+        if asn == prev:
+            continue
+        aspath.append(asn)
+        prev = asn
+    return aspath
