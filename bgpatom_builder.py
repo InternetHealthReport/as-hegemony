@@ -4,6 +4,7 @@ from particles_handler import ParticlesHandler
 
 import logging
 import bgpdata
+import json
 import utils
 
 
@@ -24,7 +25,9 @@ def atom_aspath_encoding(as_path: str):
 
 
 class BGPAtomBuilder:
-    def __init__(self):
+    def __init__(self, collector, timestamp):
+        self.collector = collector
+        self.atom_timestamp = timestamp
         self.prefix_to_atom_id = defaultdict(list)
         self.particles_handler = ParticlesHandler()
 
@@ -33,8 +36,10 @@ class BGPAtomBuilder:
         current_size = len(self.prefix_to_atom_id[prefix])
         self.prefix_to_atom_id[prefix] += ["*"] * (target_size-current_size)
 
-    def read_ribs_and_add_particles_to_atom(self, consumer: Consumer, timestamp: int):
-        for element in bgpdata.consume_rib_message_at(consumer, timestamp):
+    def read_ribs_and_add_particles_to_atom(self):
+        bgp_data_topic = f"ihr_bgp_{self.collector}_ribs"
+        ribs_consumer = bgpdata.create_consumer_and_set_offset(bgp_data_topic, self.atom_timestamp)
+        for element in bgpdata.consume_rib_message_at(ribs_consumer, self.atom_timestamp):
             peer_address = element["peer_address"]
             as_path = element["fields"]["as-path"]
             prefix = element["fields"]["prefix"]
@@ -69,18 +74,19 @@ class BGPAtomBuilder:
 
 
 if __name__ == "__main__":
-    BGP_DATA_TOPIC = "ihr_bgp_rrc10_ribs"
-    BGPATOM_FULL_FLEET_THRESHOLD = 600000
+    with open("config.json", "r") as f:
+        config = json.load(f)
 
-    offset_time_string = "2020-08-01T00:00:00"
-    offset_datetime = utils.str2dt(offset_time_string, utils.DATETIME_STRING_FORMAT)
-    offset_timestamp = utils.dt2ts(offset_datetime)
+    test_collector = "rrc10"
+    BGPATOM_FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 
-    ribs_consumer = bgpdata.create_consumer_and_set_offset(BGP_DATA_TOPIC, offset_timestamp)
-    bgpatom_builder = BGPAtomBuilder()
-    bgpatom_builder.read_ribs_and_add_particles_to_atom(ribs_consumer, offset_timestamp)
+    atom_time_string = "2020-08-01T00:00:00"
+    atom_datetime = utils.str2dt(atom_time_string, utils.DATETIME_STRING_FORMAT)
+    atom_timestamp = utils.dt2ts(atom_datetime)
+
+    bgpatom_builder = BGPAtomBuilder(test_collector, atom_timestamp)
+    bgpatom_builder.read_ribs_and_add_particles_to_atom()
     bgpatom_builder.remove_none_full_fleet_particles(BGPATOM_FULL_FLEET_THRESHOLD)
 
     bgpatom = bgpatom_builder.dump_bgpatom()
-    print("topic: ", BGP_DATA_TOPIC)
     print("number of atom: ", len(bgpatom))
