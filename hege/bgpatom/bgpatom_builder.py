@@ -1,8 +1,6 @@
 from collections import defaultdict
-from confluent_kafka import Consumer
-from particles_handler import ParticlesHandler
+from hege.bgpatom.particles_handler import ParticlesHandler
 
-import logging
 import bgpdata
 import json
 import utils
@@ -63,7 +61,7 @@ class BGPAtomBuilder:
 
 
 if __name__ == "__main__":
-    with open("config.json", "r") as f:
+    with open("/app/config.json", "r") as f:
         config = json.load(f)
 
     test_collector = "rrc10"

@@ -1,4 +1,4 @@
-from particle import Particle
+from hege.bgpatom.particle import Particle
 
 
 class ParticlesHandler:
