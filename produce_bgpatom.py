@@ -1,11 +1,11 @@
-from hege.bgpatom.bgpatom_builder import BGPAtomBuilder
-
 import argparse
 import json
 import logging
 import msgpack
+
 import utils
 from kafkadata import create_topic, prepare_producer
+from hege.bgpatom.bgpatom_builder import BGPAtomBuilder
 
 with open("config.json", "r") as f:
     config = json.load(f)
@@ -17,7 +17,7 @@ BGPATOM_METADATA_TOPIC = config["bgpatom"]["metadata_topic"]
 
 
 def produce_bgpatom_and_metadata(collector: str, timestamp: int):
-    bgpatom = construct_bgpatom(timestamp)
+    bgpatom = construct_bgpatom(collector, timestamp)
 
     produce_bgpatom(collector, timestamp, bgpatom)
     produce_bgpatom_metadata(collector, timestamp, bgpatom)
