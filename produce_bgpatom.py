@@ -15,6 +15,62 @@ with open("config.json", "r") as f:
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
 BGPATOM_FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]
+BGPATOM_METADATA_TOPIC = config["bgpatom"]["metadata_topic"]
+
+
+def produce_bgpatom_and_metadata(collector: str, timestamp: int):
+    bgpatom = construct_bgpatom(timestamp)
+
+    produce_bgpatom(timestamp, bgpatom)
+    produce_bgpatom_metadata(timestamp, bgpatom)
+
+
+def construct_bgpatom(timestamp: int):
+    logging.debug("start constructing bgpatom")
+    bgpatom_builder = BGPAtomBuilder(collector, timestamp)
+    bgpatom_builder.read_ribs_and_add_particles_to_atom()
+    bgpatom_builder.remove_none_full_fleet_particles(BGPATOM_FULL_FLEET_THRESHOLD)
+    bgpatom = bgpatom_builder.dump_bgpatom()
+    return bgpatom
+
+
+def produce_bgpatom(timestamp: int, bgpatom: dict):
+    producer = prepare_producer()
+
+    bgpatom_topic = f"ihr_bgp_atom_{collector}"
+    create_topic(bgpatom_topic)
+    ms_timestamp = timestamp * 1000
+
+    logging.debug(f"start publishing bgpatom to {bgpatom_topic}")
+    for dump_batch in get_bgpatom_prefixes_batch(bgpatom):
+        producer.produce(
+            bgpatom_topic,
+            msgpack.packb(dump_batch, use_bin_type=True),
+            callback=__delivery_report,
+            timestamp=ms_timestamp
+        )
+
+
+def produce_bgpatom_metadata(timestamp: int, bgpatom: dict):
+    producer = prepare_producer()
+
+    create_topic(BGPATOM_METADATA_TOPIC)
+    ms_timestamp = timestamp * 1000
+
+    bgpatom_meta = {
+        "total_number_of_atom": len(bgpatom),
+        "collector": collector,
+        "timestamp": timestamp
+    }
+
+    logging.debug(f"start publishing bgpatom meta to {BGPATOM_METADATA_TOPIC}")
+    producer.produce(
+        BGPATOM_METADATA_TOPIC,
+        msgpack.packb(bgpatom_meta, use_bin_type=True),
+        collector,
+        callback=__delivery_report,
+        timestamp=ms_timestamp
+    )
 
 
 def create_topic(topic_name: str):
@@ -32,50 +88,14 @@ def create_topic(topic_name: str):
             logging.warning("Failed to create topic {}: {}".format(topic, e))
 
 
-def publish_atom(collector: str, timestamp: int):
+def prepare_producer():
     logging.debug("prepare producer")
-    producer = Producer({
+    return Producer({
         'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
         'default.topic.config': {
             'compression.codec': 'snappy'
         }
     })
-
-    logging.debug("start constructing bgpatom")
-    bgpatom_builder = BGPAtomBuilder(collector, timestamp)
-    bgpatom_builder.read_ribs_and_add_particles_to_atom()
-    bgpatom_builder.remove_none_full_fleet_particles(BGPATOM_FULL_FLEET_THRESHOLD)
-    bgpatom = bgpatom_builder.dump_bgpatom()
-
-    bgpatom_topic = f"ihr_bgp_atom_{collector}_test"
-    create_topic(bgpatom_topic)
-    ms_timestamp = timestamp * 1000
-
-    logging.debug(f"start publishing bgpatom to {bgpatom_topic}")
-    for dump_batch in get_bgpatom_prefixes_batch(bgpatom):
-        producer.produce(
-            bgpatom_topic,
-            msgpack.packb(dump_batch, use_bin_type=True),
-            callback=__delivery_report,
-            timestamp=ms_timestamp
-        )
-
-    bgpatom_meta_topic = f"ihr_meta_bgp_atom"
-    create_topic(bgpatom_meta_topic)
-    bgpatom_meta = {
-        "total_number_of_atom": len(bgpatom),
-        "collector": collector,
-        "timestamp": timestamp
-    }
-
-    logging.debug(f"start publishing bgpatom meta to {bgpatom_topic}")
-    producer.produce(
-        bgpatom_meta_topic,
-        msgpack.packb(bgpatom_meta, use_bin_type=True),
-        collector,
-        callback=__delivery_report,
-        timestamp=ms_timestamp
-    )
 
 
 def get_bgpatom_prefixes_batch(bgpatom: dict):
@@ -130,4 +150,4 @@ if __name__ == "__main__":
     bgpatom_datetime = utils.str2dt(bgpatom_time_string, utils.DATETIME_STRING_FORMAT)
     bgpatom_timestamp = utils.dt2ts(bgpatom_datetime)
 
-    publish_atom(collector, bgpatom_timestamp)
+    produce_bgpatom_and_metadata(collector, bgpatom_timestamp)
