@@ -1,0 +1,60 @@
+version: "3"
+
+services:
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image:  'bitnami/kafka:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/kafka-data:/bitnami/kafka'
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
+  bgpstream-rib:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: python3 /app/produce_bgpdata.py -t ribs --collector rrc10 --startTime 2020-08-01T00:00:00 --endTime 2020-08-02T00:00:00
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
+  bgpstream-update:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: python3 /app/produce_bgpdata.py -t updates --collector rrc10 --startTime 2020-08-01T00:00:00 --endTime 2020-08-02T00:00:00
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
+  debug:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: /bin/bash
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
