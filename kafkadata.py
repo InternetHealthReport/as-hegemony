@@ -28,21 +28,22 @@ def create_consumer_and_set_offset(topic: str, timestamp: int):
 
 
 def set_consumer_time_offset(consumer: Consumer, topic: str, timestamp: int):
+    timestamp_ms = timestamp * 1000
     time_offset = consumer.offsets_for_times(
         [TopicPartition(
             topic,
             partition=0,
-            offset=timestamp
+            offset=timestamp_ms
         )], timeout=1)
 
     if time_offset == -1:
         raise Exception("cannot assign topic partition")
-
     consumer.assign(time_offset)
 
 
-def consume_stream(consumer: Consumer, ):
+def consume_stream(consumer: Consumer):
     number_of_empty_message = 0
+
     while True:
         kafka_msg = consumer.poll(1.0)
 
@@ -76,9 +77,10 @@ def create_topic(topic_name: str, topic_config=DEFAULT_TOPIC_CONFIG):
 
 def prepare_producer():
     logging.debug("prepare producer")
-    return Producer({
+    producer = Producer({
         'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
         'default.topic.config': {
             'compression.codec': 'snappy'
         }
     })
+    return producer
