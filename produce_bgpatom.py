@@ -28,6 +28,8 @@ def construct_bgpatom(collector, timestamp: int):
     bgpatom_builder.read_ribs_and_add_particles_to_atom()
     bgpatom_builder.remove_none_full_fleet_particles(BGPATOM_FULL_FLEET_THRESHOLD)
     bgpatom = bgpatom_builder.dump_bgpatom()
+
+    logging.debug(f"finished constructing {len(bgpatom)} atoms for rrc {collector}")
     return bgpatom
 
 
@@ -40,12 +42,15 @@ def produce_bgpatom(collector: str, timestamp: int, bgpatom: dict):
 
     logging.debug(f"start publishing bgpatom to {bgpatom_topic}")
     for dump_batch in get_bgpatom_prefixes_batch(bgpatom):
+        dump_batch["timestamp"] = timestamp
         producer.produce(
             bgpatom_topic,
             msgpack.packb(dump_batch, use_bin_type=True),
             callback=__delivery_report,
             timestamp=ms_timestamp
         )
+        producer.poll(0)
+    producer.flush()
 
 
 def produce_bgpatom_metadata(collector: str, timestamp: int, bgpatom: dict):
@@ -68,6 +73,7 @@ def produce_bgpatom_metadata(collector: str, timestamp: int, bgpatom: dict):
         callback=__delivery_report,
         timestamp=ms_timestamp
     )
+    producer.flush()
 
 
 def get_bgpatom_prefixes_batch(bgpatom: dict):
