@@ -1,6 +1,3 @@
-from confluent_kafka import Producer
-from confluent_kafka.admin import AdminClient, NewTopic
-
 from hege.bgpatom.bgpatom_builder import BGPAtomBuilder
 
 import argparse
@@ -8,11 +5,12 @@ import json
 import logging
 import msgpack
 import utils
-
+from kafkadata import create_topic, prepare_producer
 
 with open("config.json", "r") as f:
     config = json.load(f)
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
+DEFAULT_TOPIC_CONFIG = config["kafka"]["default_topic_config"]
 BGPATOM_FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]
 BGPATOM_METADATA_TOPIC = config["bgpatom"]["metadata_topic"]
@@ -21,11 +19,11 @@ BGPATOM_METADATA_TOPIC = config["bgpatom"]["metadata_topic"]
 def produce_bgpatom_and_metadata(collector: str, timestamp: int):
     bgpatom = construct_bgpatom(timestamp)
 
-    produce_bgpatom(timestamp, bgpatom)
-    produce_bgpatom_metadata(timestamp, bgpatom)
+    produce_bgpatom(collector, timestamp, bgpatom)
+    produce_bgpatom_metadata(collector, timestamp, bgpatom)
 
 
-def construct_bgpatom(timestamp: int):
+def construct_bgpatom(collector, timestamp: int):
     logging.debug("start constructing bgpatom")
     bgpatom_builder = BGPAtomBuilder(collector, timestamp)
     bgpatom_builder.read_ribs_and_add_particles_to_atom()
@@ -34,11 +32,11 @@ def construct_bgpatom(timestamp: int):
     return bgpatom
 
 
-def produce_bgpatom(timestamp: int, bgpatom: dict):
+def produce_bgpatom(collector: str, timestamp: int, bgpatom: dict):
     producer = prepare_producer()
 
     bgpatom_topic = f"ihr_bgp_atom_{collector}"
-    create_topic(bgpatom_topic)
+    create_topic(bgpatom_topic, DEFAULT_TOPIC_CONFIG)
     ms_timestamp = timestamp * 1000
 
     logging.debug(f"start publishing bgpatom to {bgpatom_topic}")
@@ -51,10 +49,10 @@ def produce_bgpatom(timestamp: int, bgpatom: dict):
         )
 
 
-def produce_bgpatom_metadata(timestamp: int, bgpatom: dict):
+def produce_bgpatom_metadata(collector: str, timestamp: int, bgpatom: dict):
     producer = prepare_producer()
 
-    create_topic(BGPATOM_METADATA_TOPIC)
+    create_topic(BGPATOM_METADATA_TOPIC, DEFAULT_TOPIC_CONFIG)
     ms_timestamp = timestamp * 1000
 
     bgpatom_meta = {
@@ -67,35 +65,10 @@ def produce_bgpatom_metadata(timestamp: int, bgpatom: dict):
     producer.produce(
         BGPATOM_METADATA_TOPIC,
         msgpack.packb(bgpatom_meta, use_bin_type=True),
-        collector,
+        key=collector,
         callback=__delivery_report,
         timestamp=ms_timestamp
     )
-
-
-def create_topic(topic_name: str):
-    admin_client = AdminClient({'bootstrap.servers': 'kafka:9092'})
-    topic_config = config["kafka"]["topic_config"]
-
-    topic_list = [NewTopic(topic_name, num_partitions=1, replication_factor=1, config=topic_config)]
-    created_topic = admin_client.create_topics(topic_list)
-
-    for topic, future in created_topic.items():
-        try:
-            future.result()  # The result itself is None
-            logging.warning("Topic {} created".format(topic))
-        except Exception as e:
-            logging.warning("Failed to create topic {}: {}".format(topic, e))
-
-
-def prepare_producer():
-    logging.debug("prepare producer")
-    return Producer({
-        'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
-        'default.topic.config': {
-            'compression.codec': 'snappy'
-        }
-    })
 
 
 def get_bgpatom_prefixes_batch(bgpatom: dict):
@@ -104,17 +77,18 @@ def get_bgpatom_prefixes_batch(bgpatom: dict):
         for prefix in bgpatom[atom]:
             prefixes_batch.append(prefix)
             if len(prefixes_batch) > PREFIXES_IN_ATOM_BATCH_SIZE:
-                yield format_dump_data(prefixes_batch, atom_id)
+                yield format_dump_data(prefixes_batch, atom_id, atom)
                 prefixes_batch = list()
 
         if prefixes_batch:
-            yield format_dump_data(prefixes_batch, atom_id)
+            yield format_dump_data(prefixes_batch, atom_id, atom)
 
 
-def format_dump_data(prefixes: list, atom_id: int):
+def format_dump_data(prefixes: list, atom_id: int, atom: str):
     return {
         "prefixes": prefixes,
-        "atom_id": atom_id
+        "atom_id": atom_id,
+        "atom": atom
     }
 
 
@@ -137,12 +111,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     assert args.ribs_time and args.collector, "collector (-c) and ribs_time (-t) must be entered"
-    collector = args.collector
+    selected_collector = args.collector
     ribs_time_string = args.ribs_time
 
     FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
-        format=FORMAT, filename=f"/log/ihr-kafka-bgpatom_{collector}.log",
+        format=FORMAT, filename=f"/log/ihr-kafka-bgpatom_{selected_collector}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
     )
 
@@ -150,4 +124,4 @@ if __name__ == "__main__":
     bgpatom_datetime = utils.str2dt(bgpatom_time_string, utils.DATETIME_STRING_FORMAT)
     bgpatom_timestamp = utils.dt2ts(bgpatom_datetime)
 
-    produce_bgpatom_and_metadata(collector, bgpatom_timestamp)
+    produce_bgpatom_and_metadata(selected_collector, bgpatom_timestamp)

@@ -3,6 +3,8 @@ import json
 
 import msgpack
 from confluent_kafka import Consumer, TopicPartition
+from confluent_kafka.admin import AdminClient
+from confluent_kafka.cimpl import NewTopic, Producer
 
 
 with open("config.json", "r") as f:
@@ -55,3 +57,27 @@ def consume_stream(consumer: Consumer):
 
         message = msgpack.unpackb(kafka_msg.value(), raw=False)
         yield message, kafka_msg
+
+
+def create_topic(topic_name: str, **kwargs):
+    admin_client = AdminClient({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
+
+    topic_list = [NewTopic(topic_name, **kwargs)]
+    created_topic = admin_client.create_topics(topic_list)
+
+    for topic, future in created_topic.items():
+        try:
+            future.result()  # The result itself is None
+            logging.warning("Topic {} created".format(topic))
+        except Exception as e:
+            logging.warning("Failed to create topic {}: {}".format(topic, e))
+
+
+def prepare_producer():
+    logging.debug("prepare producer")
+    return Producer({
+        'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
+        'default.topic.config': {
+            'compression.codec': 'snappy'
+        }
+    })
