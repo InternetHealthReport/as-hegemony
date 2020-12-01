@@ -1,8 +1,8 @@
 from collections import defaultdict
-from hege.bgpatom.particles_handler import ParticlesHandler
-
-import bgpdata
 import json
+
+from hege.bgpatom.particles_handler import ParticlesHandler
+import bgpdata
 import utils
 
 
@@ -24,9 +24,7 @@ class BGPAtomBuilder:
         self.prefix_to_atom_id[prefix] += ["*"] * (target_size-current_size)
 
     def read_ribs_and_add_particles_to_atom(self):
-        bgp_data_topic = f"ihr_bgp_{self.collector}_ribs"
-        ribs_consumer = bgpdata.create_consumer_and_set_offset(bgp_data_topic, self.atom_timestamp)
-        for element in bgpdata.consume_rib_message_at(ribs_consumer, self.atom_timestamp):
+        for element in bgpdata.consume_ribs_message_at(self.collector, self.atom_timestamp):
             peer_address = element["peer_address"]
             as_path = element["fields"]["as-path"]
             prefix = element["fields"]["prefix"]
