@@ -10,7 +10,6 @@ from hege.bgpatom.bgpatom_builder import BGPAtomBuilder
 with open("config.json", "r") as f:
     config = json.load(f)
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
-DEFAULT_TOPIC_CONFIG = config["kafka"]["default_topic_config"]
 BGPATOM_FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]
 BGPATOM_METADATA_TOPIC = config["bgpatom"]["metadata_topic"]
@@ -36,7 +35,7 @@ def produce_bgpatom(collector: str, timestamp: int, bgpatom: dict):
     producer = prepare_producer()
 
     bgpatom_topic = f"ihr_bgp_atom_{collector}"
-    create_topic(bgpatom_topic, DEFAULT_TOPIC_CONFIG)
+    create_topic(bgpatom_topic)
     ms_timestamp = timestamp * 1000
 
     logging.debug(f"start publishing bgpatom to {bgpatom_topic}")
@@ -52,7 +51,7 @@ def produce_bgpatom(collector: str, timestamp: int, bgpatom: dict):
 def produce_bgpatom_metadata(collector: str, timestamp: int, bgpatom: dict):
     producer = prepare_producer()
 
-    create_topic(BGPATOM_METADATA_TOPIC, DEFAULT_TOPIC_CONFIG)
+    create_topic(BGPATOM_METADATA_TOPIC)
     ms_timestamp = timestamp * 1000
 
     bgpatom_meta = {

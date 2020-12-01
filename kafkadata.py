@@ -11,6 +11,7 @@ with open("config.json", "r") as f:
     config = json.load(f)
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
 NO_NEW_MESSAGE_LIMIT = config["kafka"]["no_new_message_limit"]
+DEFAULT_TOPIC_CONFIG = config["kafka"]["default_topic_config"]
 
 
 def create_consumer_and_set_offset(topic: str, timestamp: int):
@@ -40,7 +41,7 @@ def set_consumer_time_offset(consumer: Consumer, topic: str, timestamp: int):
     consumer.assign(time_offset)
 
 
-def consume_stream(consumer: Consumer):
+def consume_stream(consumer: Consumer, ):
     number_of_empty_message = 0
     while True:
         kafka_msg = consumer.poll(1.0)
@@ -59,15 +60,15 @@ def consume_stream(consumer: Consumer):
         yield message, kafka_msg
 
 
-def create_topic(topic_name: str, **kwargs):
+def create_topic(topic_name: str, topic_config=DEFAULT_TOPIC_CONFIG):
     admin_client = AdminClient({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
 
-    topic_list = [NewTopic(topic_name, **kwargs)]
+    topic_list = [NewTopic(topic_name, **topic_config)]
     created_topic = admin_client.create_topics(topic_list)
 
     for topic, future in created_topic.items():
         try:
-            future.result()  # The result itself is None
+            future.result()
             logging.warning("Topic {} created".format(topic))
         except Exception as e:
             logging.warning("Failed to create topic {}: {}".format(topic, e))
