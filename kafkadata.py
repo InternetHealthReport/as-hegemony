@@ -84,3 +84,14 @@ def prepare_producer():
         }
     })
     return producer
+
+
+def delete_topic(topics_list: list):
+    admin_client = AdminClient({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
+    deleted_topics = admin_client.delete_topics(topics_list)
+    for topic, future in deleted_topics.items():
+        try:
+            future.result()
+            logging.warning("Topic {} deleted".format(topic))
+        except Exception as e:
+            logging.warning("Failed to delete topic {}: {}".format(topic, e))
