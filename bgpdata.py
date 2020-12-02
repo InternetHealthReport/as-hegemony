@@ -35,7 +35,7 @@ def consume_updates_message_upto(collector: str, start_timestamp: int, end_times
                 yield element
 
 
-def consume_bgp_data_stream(collector: str, start_timestamp: int, end_timestamp: int):
+def consume_ribs_and_update_message_upto(collector: str, start_timestamp: int, end_timestamp: int):
     for element in consume_ribs_message_at(collector, start_timestamp):
         yield element
 
