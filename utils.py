@@ -31,5 +31,6 @@ def remove_path_prepending(prepended_aspath: list):
         prev = asn
     return aspath
 
+
 def is_ip_v6(prefix: str):
     return ":" in prefix
