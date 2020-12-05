@@ -1,77 +1,68 @@
 from collections import defaultdict
 import json
 
-from hege.bgpatom.particles_handler import ParticlesHandler
+from hege.bgpatom.bgpatom_peer import BGPAtomPeer
 import bgpdata
 import utils
 
 
-def atom_aspath_encoding(as_path: str):
-    non_prepended_as_path = utils.remove_path_prepending(as_path.split(" "))
-    return tuple(non_prepended_as_path[:-1])
+with open("config.json", "r") as f:
+    config = json.load(f)
+DUMP_INTERVAL = config["bgpatom"]["dump_interval"]
+FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 
 
 class BGPAtomBuilder:
-    def __init__(self, collector, timestamp):
+    def __init__(self, collector, start_timestamp: int, end_timestamp: int):
         self.collector = collector
-        self.atom_timestamp = timestamp
-        self.prefix_to_atom_id = defaultdict(list)
-        self.particles_handler = ParticlesHandler()
+        self.start_timestamp = start_timestamp
+        self.end_timestamp = end_timestamp
 
-    def resize_prefix_atom_id_length(self, prefix):
-        target_size = self.particles_handler.number_of_particles
-        current_size = len(self.prefix_to_atom_id[prefix])
-        self.prefix_to_atom_id[prefix] += ["*"] * (target_size-current_size)
+        self.bgpatom_peers = dict()
 
-    def read_ribs_and_add_particles_to_atom(self):
-        for element in bgpdata.consume_ribs_message_at(self.collector, self.atom_timestamp):
+    def get_bgpatom_peer(self, peer_address: str):
+        if peer_address not in self.bgpatom_peers:
+            self.set_bgpatom_peer(peer_address)
+        return self.bgpatom_peers[peer_address]
+
+    def set_bgpatom_peer(self, peer_address: str):
+        self.bgpatom_peers[peer_address] = BGPAtomPeer(peer_address)
+
+    def read_bgp_message_and_construct_atom(self):
+        next_dumped_timestamp = self.start_timestamp
+        for element in bgpdata.consume_ribs_and_update_message_upto(
+                self.collector, self.start_timestamp, self.end_timestamp):
+
+            if element["time"] > next_dumped_timestamp:
+                yield next_dumped_timestamp
+                next_dumped_timestamp += DUMP_INTERVAL
+
             peer_address = element["peer_address"]
-            as_path = element["fields"]["as-path"]
-            prefix = element["fields"]["prefix"]
+            bgpatom_peer = self.get_bgpatom_peer(peer_address)
+            bgpatom_peer.update_prefix_status(element)
 
-            if prefix == "0.0.0.0/0":
-                continue
+    def dump_bgpatom_messages(self, timestamp: int, full_fleet_threshold: int):
+        for peer_address in self.bgpatom_peers:
+            bgpatom_peer = self.bgpatom_peers[peer_address]
 
-            particle = self.particles_handler.get_particle_by_peer_address(peer_address)
-            particle.increment_prefixes_count()
-
-            atom_as_path = atom_aspath_encoding(as_path)
-            particle_id = particle.idx
-            aspath_id = particle.get_id_by_aspath(atom_as_path)
-
-            self.resize_prefix_atom_id_length(prefix)
-            self.prefix_to_atom_id[prefix][particle_id] = str(aspath_id)
-
-    def remove_none_full_fleet_particles(self, threshold: int):
-        none_full_fleet = self.particles_handler.get_none_full_fleet_particles(threshold)
-
-        for prefix in self.prefix_to_atom_id:
-            self.resize_prefix_atom_id_length(prefix)
-            for none_full_fleet_particle_id in none_full_fleet:
-                self.prefix_to_atom_id[prefix][none_full_fleet_particle_id] = "-"
-
-    def dump_bgpatom(self):
-        bgpatom_id_to_prefixes = defaultdict(list)
-        for prefix in self.prefix_to_atom_id:
-            atom_id = "|".join(self.prefix_to_atom_id[prefix])
-            bgpatom_id_to_prefixes[atom_id].append(prefix)
-        return bgpatom_id_to_prefixes
+            if bgpatom_peer.is_full_fleet(full_fleet_threshold):
+                for bgpatom_kafka_message in bgpatom_peer.dump_bgpatom(timestamp):
+                    yield bgpatom_kafka_message
 
 
 if __name__ == "__main__":
-    with open("/app/config.json", "r") as f:
-        config = json.load(f)
-
     test_collector = "rrc10"
-    BGPATOM_FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 
-    atom_time_string = "2020-08-01T00:00:00"
-    atom_datetime = utils.str2dt(atom_time_string, utils.DATETIME_STRING_FORMAT)
-    atom_timestamp = utils.dt2ts(atom_datetime)
+    start_time_string = "2020-08-01T00:00:00"
+    start_datetime = utils.str2dt(start_time_string, utils.DATETIME_STRING_FORMAT)
+    start_ts = utils.dt2ts(start_datetime)
 
-    bgpatom_builder = BGPAtomBuilder(test_collector, atom_timestamp)
-    bgpatom_builder.read_ribs_and_add_particles_to_atom()
-    bgpatom_builder.remove_none_full_fleet_particles(BGPATOM_FULL_FLEET_THRESHOLD)
+    end_time_string = "2020-08-01T00:16:00"
+    end_datetime = utils.str2dt(end_time_string, utils.DATETIME_STRING_FORMAT)
+    end_ts = utils.dt2ts(end_datetime)
 
-    bgpatom = bgpatom_builder.dump_bgpatom()
-    print("number of atom: ", len(bgpatom))
+    bgpatom_builder = BGPAtomBuilder(test_collector, start_ts, end_ts)
+    for ts in bgpatom_builder.read_bgp_message_and_construct_atom():
+        for message in bgpatom_builder.dump_bgpatom_messages(ts, FULL_FLEET_THRESHOLD):
+            print(ts, message)
+            break
