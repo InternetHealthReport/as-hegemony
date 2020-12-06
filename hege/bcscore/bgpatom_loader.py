@@ -1,14 +1,8 @@
-import json
 import logging
 from collections import defaultdict
 
 import kafkadata
 import utils
-
-
-with open("config.json", "r") as f:
-    config = json.load(f)
-BGPATOM_METADATA_TOPIC = config["bgpatom"]["metadata_topic"]
 
 
 class BGPAtomLoader:
@@ -18,9 +12,10 @@ class BGPAtomLoader:
 
     def load_bgpatom(self):
         collector_bgpatom = defaultdict(lambda: defaultdict(list))
-
         bgpatom_topic = f"ihr_bgp_atom_{self.collector}"
         consumer = kafkadata.create_consumer_and_set_offset(bgpatom_topic, self.timestamp)
+
+        logging.debug(f"start consuming bgpatom from {bgpatom_topic} at {self.timestamp}")
         for message, _ in kafkadata.consume_stream(consumer):
 
             message_timestamp = message["timestamp"]
@@ -35,7 +30,7 @@ class BGPAtomLoader:
         peer_address = message["peer_address"]
         as_path = tuple(message["aspath"])
         prefixes = message["prefixes"]
-        
+
         peer_bgpatom = collector_bgpatom[peer_address]
         peer_bgpatom[as_path] += prefixes
 
