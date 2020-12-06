@@ -45,8 +45,7 @@ def consume_ribs_and_update_message_upto(collector: str, start_timestamp: int, e
 
 if __name__ == "__main__":
     offset_time_string = "2020-08-01T00:00:00"
-    offset_datetime = utils.str2dt(offset_time_string, utils.DATETIME_STRING_FORMAT)
-    offset_timestamp = utils.dt2ts(offset_datetime)
+    offset_timestamp = utils.str_datetime_to_timestamp(offset_time_string)
 
     print("consuming ribs message")
     for msg in consume_ribs_message_at("rrc10", offset_timestamp):

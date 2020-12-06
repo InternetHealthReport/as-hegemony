@@ -54,12 +54,10 @@ if __name__ == "__main__":
     test_collector = "rrc10"
 
     start_time_string = "2020-08-01T00:00:00"
-    start_datetime = utils.str2dt(start_time_string, utils.DATETIME_STRING_FORMAT)
-    start_ts = utils.dt2ts(start_datetime)
+    start_ts = utils.str_datetime_to_timestamp(start_time_string)
 
     end_time_string = "2020-08-01T00:16:00"
-    end_datetime = utils.str2dt(end_time_string, utils.DATETIME_STRING_FORMAT)
-    end_ts = utils.dt2ts(end_datetime)
+    end_ts = utils.str_datetime_to_timestamp(end_time_string)
 
     bgpatom_builder = BGPAtomBuilder(test_collector, start_ts, end_ts)
     for ts in bgpatom_builder.read_bgp_message_and_construct_atom():
