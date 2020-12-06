@@ -8,6 +8,7 @@ with open("config.json", "r") as f:
     config = json.load(f)
 WITHDRAWN_PATH_ID = -1
 PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]
+FULL_FLEET_PREFIXES_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 
 
 class BGPAtomPeer:
@@ -60,8 +61,8 @@ class BGPAtomPeer:
     def update_withdrawal_message(self, prefix):
         self.prefix_to_aspath[prefix] = WITHDRAWN_PATH_ID
 
-    def is_full_fleet(self, threshold):
-        return self.prefixes_count < threshold
+    def is_full_fleet(self):
+        return self.prefixes_count > FULL_FLEET_PREFIXES_THRESHOLD
 
     def dump_bgpatom(self, timestamp: int):
         bgpatom = self.construct_bgpatom()
@@ -90,6 +91,8 @@ class BGPAtomPeer:
             origin_asn = self.prefix_to_origin_asn[prefix]
             bgpatom[path_id].append((prefix, origin_asn))
 
+        if not self.is_full_fleet():
+            return dict()
         return bgpatom
 
     def format_dump_data(self, prefixes_batch: list, path_id: int, timestamp: int):

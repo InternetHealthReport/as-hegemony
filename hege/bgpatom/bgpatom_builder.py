@@ -9,7 +9,6 @@ import utils
 with open("config.json", "r") as f:
     config = json.load(f)
 DUMP_INTERVAL = config["bgpatom"]["dump_interval"]
-FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 
 
 class BGPAtomBuilder:
@@ -41,13 +40,12 @@ class BGPAtomBuilder:
             bgpatom_peer = self.get_bgpatom_peer(peer_address)
             bgpatom_peer.update_prefix_status(element)
 
-    def dump_bgpatom_messages(self, timestamp: int, full_fleet_threshold: int):
+    def dump_bgpatom_messages(self, timestamp: int):
         for peer_address in self.bgpatom_peers:
             bgpatom_peer = self.bgpatom_peers[peer_address]
 
-            if bgpatom_peer.is_full_fleet(full_fleet_threshold):
-                for bgpatom_kafka_message in bgpatom_peer.dump_bgpatom(timestamp):
-                    yield bgpatom_kafka_message
+            for bgpatom_kafka_message in bgpatom_peer.dump_bgpatom(timestamp):
+                yield bgpatom_kafka_message, peer_address
 
 
 if __name__ == "__main__":
@@ -61,6 +59,6 @@ if __name__ == "__main__":
 
     bgpatom_builder = BGPAtomBuilder(test_collector, start_ts, end_ts)
     for ts in bgpatom_builder.read_bgp_message_and_construct_atom():
-        for message in bgpatom_builder.dump_bgpatom_messages(ts, FULL_FLEET_THRESHOLD):
+        for message in bgpatom_builder.dump_bgpatom_messages(ts):
             print(ts, message)
             break
