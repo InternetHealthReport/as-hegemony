@@ -1,14 +1,21 @@
-import logging
 from collections import defaultdict
+import logging
+import json
 
 import kafkadata
 import utils
+
+
+with open("config.json", "r") as f:
+    config = json.load(f)["bgpatom"]
+BGPATOM_META_DATA_TOPIC = config["meta_data_topic"]
 
 
 class BGPAtomLoader:
     def __init__(self, collector: str, timestamp: int):
         self.collector = collector
         self.timestamp = timestamp
+        self.messages_per_peer = defaultdict(int)
 
     def load_bgpatom(self):
         collector_bgpatom = defaultdict(lambda: defaultdict(list))
@@ -17,22 +24,41 @@ class BGPAtomLoader:
 
         logging.debug(f"start consuming bgpatom from {bgpatom_topic} at {self.timestamp}")
         for message, _ in kafkadata.consume_stream(consumer):
-
             message_timestamp = message["timestamp"]
             if message_timestamp != self.timestamp:
                 break
             self.read_bgpatom_message(message, collector_bgpatom)
 
-        return collector_bgpatom
+        if self.cross_check_with_meta_data():
+            return collector_bgpatom
+        else:
+            return dict()
 
-    @staticmethod
-    def read_bgpatom_message(message: dict, collector_bgpatom: dict):
+    def read_bgpatom_message(self, message: dict, collector_bgpatom: dict):
         peer_address = message["peer_address"]
         as_path = tuple(message["aspath"])
         prefixes = message["prefixes"]
 
         peer_bgpatom = collector_bgpatom[peer_address]
         peer_bgpatom[as_path] += prefixes
+
+        self.messages_per_peer[peer_address] += 1
+
+    def cross_check_with_meta_data(self):
+        consumer = kafkadata.create_consumer_and_set_offset(BGPATOM_META_DATA_TOPIC, self.timestamp)
+        messages_per_peer = dict()
+        for message, _ in kafkadata.consume_stream(consumer):
+            message_timestamp = message["timestamp"]
+            print(message_timestamp)
+            if message_timestamp != self.timestamp:
+                break
+            messages_per_peer = message["messages_per_peer"]
+
+        for peer_address in messages_per_peer:
+            if messages_per_peer[peer_address] != self.messages_per_peer[peer_address]:
+                logging.error("number of messages received is different from messages in metadata")
+                return False
+        return True
 
 
 if __name__ == "__main__":

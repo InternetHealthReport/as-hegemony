@@ -1,3 +1,5 @@
+from collections import defaultdict
+from functools import partial
 import argparse
 import json
 import logging
@@ -12,6 +14,9 @@ with open("config.json", "r") as f:
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
 BGPATOM_FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
+BGPATOM_META_DATA_TOPIC = config["bgpatom"]["meta_data_topic"]
+
+messages_per_peer = defaultdict(int)
 
 
 def produce_bgpatom_between(collector: str, start_timestamp: int, end_timestamp: int):
@@ -20,29 +25,73 @@ def produce_bgpatom_between(collector: str, start_timestamp: int, end_timestamp:
     create_topic(bgpatom_topic)
 
     logging.debug(f"start dumping bgpatom to {bgpatom_topic}, between {start_timestamp} and {end_timestamp}")
+
     for timestamp in bgpatom_builder.read_bgp_message_and_construct_atom():
         producer = prepare_producer()
-
-        logging.debug(f"({bgpatom_topic}, {timestamp}): start producing ...")
-        ms_timestamp = timestamp * 1000
-        for message, peer_address in bgpatom_builder.dump_bgpatom_messages(timestamp):
-            producer.produce(
-                bgpatom_topic,
-                msgpack.packb(message, use_bin_type=True),
-                peer_address,
-                callback=__delivery_report,
-                timestamp=ms_timestamp
-            )
-            producer.poll(0)
-        producer.flush()
-        logging.debug(f"({bgpatom_topic}, {timestamp}): DONE")
+        bgpatom_message_generator = bgpatom_builder.dump_bgpatom_messages(timestamp)
+        produce_bgpatom_at(producer, bgpatom_message_generator, bgpatom_topic, timestamp)
 
     logging.debug(f"successfully dumped bgpatom: ({bgpatom_topic}, {start_timestamp} - {end_timestamp})")
 
 
-def __delivery_report(err, _):
+def produce_bgpatom_at(producer, bgpatom_message_generator, bgpatom_topic: str, timestamp: int):
+    logging.debug(f"({bgpatom_topic}, {timestamp}): start producing ...")
+
+    produce_bgpatom_data_at(producer, bgpatom_message_generator, bgpatom_topic, timestamp)
+    produce_bgpatom_metadata_at(producer, timestamp)
+    producer.flush()
+
+    logging.debug(f"({bgpatom_topic}, {timestamp}): DONE")
+
+
+def produce_bgpatom_data_at(producer, bgpatom_message_generator, bgpatom_topic:str,  timestamp: int):
+    ms_timestamp = timestamp * 1000
+    global messages_per_peer
+    messages_per_peer = dict()
+
+    for message, peer_address in bgpatom_message_generator:
+        delivery_report = partial(__delivery_report, peer_address)
+        producer.produce(
+            bgpatom_topic,
+            msgpack.packb(message, use_bin_type=True),
+            peer_address,
+            callback=delivery_report,
+            timestamp=ms_timestamp
+        )
+        producer.poll(0)
+
+
+def produce_bgpatom_metadata_at(producer, timestamp: int):
+    ms_timestamp = timestamp * 1000
+    global messages_per_peer
+    messages_per_peer = dict()
+
+    kafka_message = {
+        "messages_per_peer": messages_per_peer,
+        "timestamp": timestamp
+    }
+    producer.produce(
+        BGPATOM_META_DATA_TOPIC,
+        msgpack.packb(kafka_message, use_bin_type=True),
+        callback=__meta_delivery_report,
+        timestamp=ms_timestamp
+    )
+    producer.poll(0)
+
+
+def __delivery_report(peer_address, err, _):
     if err is not None:
         logging.error('Message delivery failed: {}'.format(err))
+    else:
+        global messages_per_peer
+        if peer_address not in messages_per_peer:
+            messages_per_peer[peer_address] = 0
+        messages_per_peer[peer_address] += 1
+
+
+def __meta_delivery_report(err, _):
+    if err is not None:
+        logging.error('metadata delivery failed: {}'.format(err))
     else:
         pass
 
