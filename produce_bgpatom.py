@@ -61,13 +61,13 @@ def produce_bgpatom_metadata_at(producer, timestamp: int):
     ms_timestamp = timestamp * 1000
     global messages_per_peer
 
-    kafka_message = {
+    kafka_meta_message = {
         "messages_per_peer": messages_per_peer,
         "timestamp": timestamp
     }
     producer.produce(
         BGPATOM_META_DATA_TOPIC,
-        msgpack.packb(kafka_message, use_bin_type=True),
+        msgpack.packb(kafka_meta_message, use_bin_type=True),
         callback=__meta_delivery_report,
         timestamp=ms_timestamp
     )
