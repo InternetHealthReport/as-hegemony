@@ -33,7 +33,8 @@ class BGPAtomBuilder:
                 self.collector, self.start_timestamp, self.end_timestamp):
 
             if element["time"] > next_dumped_timestamp:
-                yield next_dumped_timestamp
+                bgpatom_messages_generator = self.dump_bgpatom_messages(next_dumped_timestamp)
+                yield next_dumped_timestamp, bgpatom_messages_generator
                 next_dumped_timestamp += DUMP_INTERVAL
 
             peer_address = element["peer_address"]
@@ -58,7 +59,8 @@ if __name__ == "__main__":
     end_ts = utils.str_datetime_to_timestamp(end_time_string)
 
     bgpatom_builder = BGPAtomBuilder(test_collector, start_ts, end_ts)
-    for ts in bgpatom_builder.read_bgp_message_and_construct_atom():
-        for message in bgpatom_builder.dump_bgpatom_messages(ts):
+    for ts, bgpatom_generator in bgpatom_builder.read_bgp_message_and_construct_atom():
+        for message in bgpatom_generator:
             print(ts, message)
             break
+        break

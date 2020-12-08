@@ -12,8 +12,6 @@ from hege.bgpatom.bgpatom_builder import BGPAtomBuilder
 with open("config.json", "r") as f:
     config = json.load(f)
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
-BGPATOM_FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
-FULL_FLEET_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 BGPATOM_META_DATA_TOPIC = config["bgpatom"]["meta_data_topic"]
 
 messages_per_peer = defaultdict(int)
@@ -27,10 +25,9 @@ def produce_bgpatom_between(collector: str, start_timestamp: int, end_timestamp:
 
     logging.debug(f"start dumping bgpatom to {bgpatom_topic}, between {start_timestamp} and {end_timestamp}")
 
-    for timestamp in bgpatom_builder.read_bgp_message_and_construct_atom():
+    for timestamp, bgpatom_messages_generator in bgpatom_builder.read_bgp_message_and_construct_atom():
         producer = prepare_producer()
-        bgpatom_message_generator = bgpatom_builder.dump_bgpatom_messages(timestamp)
-        produce_bgpatom_at(producer, bgpatom_message_generator, bgpatom_topic, timestamp)
+        produce_bgpatom_at(producer, bgpatom_messages_generator, bgpatom_topic, timestamp)
 
     logging.debug(f"successfully dumped bgpatom: ({bgpatom_topic}, {start_timestamp} - {end_timestamp})")
 
