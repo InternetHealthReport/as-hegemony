@@ -48,19 +48,35 @@ class ViewPoint:
                 for asn in aspath:
                     local_graph[asn] += weight_per_asn[origin_asn]
                 local_graph[origin_asn] += weight_per_asn[origin_asn]
-        return bcscore
+        return self.normalized_bcscore_value(bcscore)
 
     def calculate_accumulated_weight(self, aspath):
         weight_per_asn = defaultdict(int)
         for prefix, origin_asn in self.bgpatom[aspath]:
-            print(prefix)
             node = self.prefixes_weight.search_exact(prefix)
             weight_per_asn[origin_asn] += node.data["weight"]
         return weight_per_asn
 
+    @staticmethod
+    def normalized_bcscore_value(bcscore):
+        to_be_removed_asn = list()
+        for origin_asn in bcscore:
+            origin_asn_total_weight = bcscore[origin_asn][origin_asn]
 
-def debug__test1():
-    collector_bgpatom = BGPAtomLoader(test_collector, atom_timestamp).load_bgpatom()
+            if origin_asn_total_weight == 0:
+                to_be_removed_asn.append(origin_asn)
+            else:
+                for asn in bcscore[origin_asn]:
+                    bcscore[origin_asn][asn] /= origin_asn_total_weight
+
+        for origin_asn in to_be_removed_asn:
+            bcscore.pop(origin_asn)
+
+        return bcscore
+
+
+def debug__test1(collector: str, timestamp: int):
+    collector_bgpatom = BGPAtomLoader(collector, timestamp).load_bgpatom()
     sample_peer_address = list(collector_bgpatom.keys())[0]
     return collector_bgpatom[sample_peer_address]
 
@@ -77,7 +93,7 @@ if __name__ == "__main__":
     test_collector = "rrc10"
     atom_timestamp = utils.str_datetime_to_timestamp("2020-08-01T00:00:00")
 
-    sample_viewpoint = ViewPoint("1.1.1.1", debug__test1())
-    bcscore = sample_viewpoint.calculate_viewpoint_bcscore()
+    sample_viewpoint = ViewPoint("1.1.1.1", debug__test1(test_collector, atom_timestamp))
+    sample_viewpoint_bcscore = sample_viewpoint.calculate_viewpoint_bcscore()
     with open("bc_score_sample.json", "w") as f:
-        json.dump(bcscore, f)
+        json.dump(sample_viewpoint_bcscore, f, indent=4)
