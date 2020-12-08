@@ -46,25 +46,28 @@ class BGPAtomLoader:
 
     def cross_check_with_meta_data(self):
         consumer = kafkadata.create_consumer_and_set_offset(BGPATOM_META_DATA_TOPIC, self.timestamp)
-        messages_per_peer = dict()
+        messages_per_peer = None
         for message, _ in kafkadata.consume_stream(consumer):
             message_timestamp = message["timestamp"]
-            print(message_timestamp)
             if message_timestamp != self.timestamp:
                 break
             messages_per_peer = message["messages_per_peer"]
 
-        for peer_address in messages_per_peer:
+        if messages_per_peer is None:
+            logging.error("did not find bgpatom metadata")
+            return False
+
+        for peer_address in self.messages_per_peer:
             if messages_per_peer[peer_address] != self.messages_per_peer[peer_address]:
                 logging.error("number of messages received is different from messages in metadata")
                 return False
+
         return True
 
 
 if __name__ == "__main__":
     bgpatom_time_string = "2020-08-01T00:00:00"
-    bgpatom_datetime = utils.str_datetime_to_datetime(bgpatom_time_string, utils.DATETIME_STRING_FORMAT)
-    bgpatom_timestamp = utils.datetime_to_timestamp(bgpatom_datetime)
+    bgpatom_timestamp = utils.str_datetime_to_timestamp(bgpatom_time_string)
 
     test_collector = "rrc10"
     bgpatom = BGPAtomLoader(test_collector, bgpatom_timestamp).load_bgpatom()

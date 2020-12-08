@@ -23,6 +23,7 @@ def produce_bgpatom_between(collector: str, start_timestamp: int, end_timestamp:
     bgpatom_builder = BGPAtomBuilder(collector, start_timestamp, end_timestamp)
     bgpatom_topic = f"ihr_bgp_atom_{collector}"
     create_topic(bgpatom_topic)
+    create_topic(BGPATOM_META_DATA_TOPIC)
 
     logging.debug(f"start dumping bgpatom to {bgpatom_topic}, between {start_timestamp} and {end_timestamp}")
 
@@ -39,15 +40,12 @@ def produce_bgpatom_at(producer, bgpatom_message_generator, bgpatom_topic: str, 
 
     produce_bgpatom_data_at(producer, bgpatom_message_generator, bgpatom_topic, timestamp)
     produce_bgpatom_metadata_at(producer, timestamp)
-    producer.flush()
 
     logging.debug(f"({bgpatom_topic}, {timestamp}): DONE")
 
 
-def produce_bgpatom_data_at(producer, bgpatom_message_generator, bgpatom_topic:str,  timestamp: int):
+def produce_bgpatom_data_at(producer, bgpatom_message_generator, bgpatom_topic: str,  timestamp: int):
     ms_timestamp = timestamp * 1000
-    global messages_per_peer
-    messages_per_peer = dict()
 
     for message, peer_address in bgpatom_message_generator:
         delivery_report = partial(__delivery_report, peer_address)
@@ -59,12 +57,12 @@ def produce_bgpatom_data_at(producer, bgpatom_message_generator, bgpatom_topic:s
             timestamp=ms_timestamp
         )
         producer.poll(0)
+    producer.flush()
 
 
 def produce_bgpatom_metadata_at(producer, timestamp: int):
     ms_timestamp = timestamp * 1000
     global messages_per_peer
-    messages_per_peer = dict()
 
     kafka_message = {
         "messages_per_peer": messages_per_peer,
@@ -76,7 +74,7 @@ def produce_bgpatom_metadata_at(producer, timestamp: int):
         callback=__meta_delivery_report,
         timestamp=ms_timestamp
     )
-    producer.poll(0)
+    producer.flush()
 
 
 def __delivery_report(peer_address, err, _):
