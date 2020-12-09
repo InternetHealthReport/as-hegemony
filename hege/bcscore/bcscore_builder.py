@@ -7,6 +7,7 @@ import utils
 with open("/app/config.json", "r") as f:
     config = json.load(f)
 DUMP_INTERVAL = config["bcscore"]["dump_interval"]
+BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic"]
 
 
 class BCScoreBuilder:
@@ -15,7 +16,10 @@ class BCScoreBuilder:
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
 
-    def consume_bgpatom_and_calculate_bcscore(self):
+        self.kafka_data_topic = f"ihr_bcscore_{collector}"
+        self.kafka_meta_data_topic = BCSCORE_META_DATA_TOPIC
+
+    def consume_and_calculate(self):
         for current_timestamp in range(self.start_timestamp, self.end_timestamp, DUMP_INTERVAL):
             bgpatom = self.load_bgpatom(current_timestamp)
             yield current_timestamp, self.get_viewpoint_bcscore_generator(bgpatom)
@@ -23,7 +27,9 @@ class BCScoreBuilder:
     def get_viewpoint_bcscore_generator(self, bgpatom: dict):
         for peer_address in bgpatom:
             peer_bgpatom = bgpatom[peer_address]
-            yield peer_address, self.calculate_viewpoint_bcscore(peer_bgpatom, peer_bgpatom)
+            peer_bcscore = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_bgpatom)
+            for origin_asn in peer_bcscore:
+                yield peer_bcscore[origin_asn], peer_address
 
     def load_bgpatom(self, atom_timestamp):
         bgpatom = BGPAtomLoader(self.collector, atom_timestamp).load_bgpatom()
@@ -45,9 +51,9 @@ if __name__ == "__main__":
     test_collector = "rrc10"
 
     bcscore_builder = BCScoreBuilder(test_collector, start_at, end_at)
-    for timestamp, viewpoint_bcscore_generator in bcscore_builder.consume_bgpatom_and_calculate_bcscore():
+    for timestamp, viewpoint_bcscore_generator in bcscore_builder.consume_and_calculate():
         print(timestamp)
-        for peer, bcscore in viewpoint_bcscore_generator:
-            print(peer, len(bcscore))
+        for bcscore, peer in viewpoint_bcscore_generator:
+            print(peer, bcscore)
             break
         break
