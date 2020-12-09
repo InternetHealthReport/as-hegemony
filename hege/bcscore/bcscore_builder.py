@@ -27,7 +27,7 @@ class BCScoreBuilder:
     def get_viewpoint_bcscore_generator(self, bgpatom: dict):
         for peer_address in bgpatom:
             peer_bgpatom = bgpatom[peer_address]
-            peer_bcscore = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_bgpatom)
+            peer_bcscore = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_address)
             for origin_asn in peer_bcscore:
                 yield peer_bcscore[origin_asn], peer_address
 
