@@ -1,10 +1,9 @@
 from collections import defaultdict
 import json
 
-import utils
+from hege.utils import utils
 
-
-with open("config.json", "r") as f:
+with open("/app/config.json", "r") as f:
     config = json.load(f)
 WITHDRAWN_PATH_ID = -1
 PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]

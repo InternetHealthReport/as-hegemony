@@ -1,9 +1,10 @@
 from collections import defaultdict
 import radix
 import json
+import logging
 
 from hege.bcscore.bgpatom_loader import BGPAtomLoader
-import utils
+from hege.utils import utils
 
 
 class ViewPoint:
@@ -39,6 +40,7 @@ class ViewPoint:
                 self.prefixes_weight.add(prefix)
 
     def calculate_viewpoint_bcscore(self):
+        logging.debug(f"start calculating bcscore ({self.peer_address})")
         self.calculate_prefixes_weight()
         bcscore = defaultdict(lambda: defaultdict(int))
         for aspath in self.bgpatom:

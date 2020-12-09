@@ -2,11 +2,9 @@ from collections import defaultdict
 import logging
 import json
 
-import kafkadata
-import utils
+from hege.utils import kafka_data, utils
 
-
-with open("config.json", "r") as f:
+with open("/app/config.json", "r") as f:
     config = json.load(f)["bgpatom"]
 BGPATOM_META_DATA_TOPIC = config["meta_data_topic"]
 
@@ -20,10 +18,10 @@ class BGPAtomLoader:
     def load_bgpatom(self):
         collector_bgpatom = defaultdict(lambda: defaultdict(list))
         bgpatom_topic = f"ihr_bgp_atom_{self.collector}"
-        consumer = kafkadata.create_consumer_and_set_offset(bgpatom_topic, self.timestamp)
+        consumer = kafka_data.create_consumer_and_set_offset(bgpatom_topic, self.timestamp)
 
         logging.debug(f"start consuming bgpatom from {bgpatom_topic} at {self.timestamp}")
-        for message, _ in kafkadata.consume_stream(consumer):
+        for message, _ in kafka_data.consume_stream(consumer):
             message_timestamp = message["timestamp"]
             if message_timestamp != self.timestamp:
                 break
@@ -45,9 +43,9 @@ class BGPAtomLoader:
         self.messages_per_peer[peer_address] += 1
 
     def cross_check_with_meta_data(self):
-        consumer = kafkadata.create_consumer_and_set_offset(BGPATOM_META_DATA_TOPIC, self.timestamp)
+        consumer = kafka_data.create_consumer_and_set_offset(BGPATOM_META_DATA_TOPIC, self.timestamp)
         messages_per_peer = None
-        for message, _ in kafkadata.consume_stream(consumer):
+        for message, _ in kafka_data.consume_stream(consumer):
             message_timestamp = message["timestamp"]
             if message_timestamp != self.timestamp:
                 break

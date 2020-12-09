@@ -2,7 +2,7 @@ from functools import partial
 import logging
 import msgpack
 
-from kafkadata import create_topic, prepare_producer
+from hege.utils.kafka_data import create_topic, prepare_producer
 
 
 class DataProducer:

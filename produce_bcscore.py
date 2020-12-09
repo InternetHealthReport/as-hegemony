@@ -2,9 +2,8 @@ import argparse
 import logging
 
 from hege.bcscore.bcscore_builder import BCScoreBuilder
-from data_producer import DataProducer
-import utils
-
+from hege.utils.data_producer import DataProducer
+from hege.utils import utils
 
 if __name__ == "__main__":
     text = """This script consumes BGP Data from selected collector(s) 

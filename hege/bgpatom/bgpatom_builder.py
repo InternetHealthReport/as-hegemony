@@ -1,11 +1,10 @@
 import json
 
 from hege.bgpatom.bgpatom_peer import BGPAtomPeer
-from hege.bgpatom.bgpdata import consume_ribs_and_update_message_upto
-import utils
+from hege.bgpatom.bgp_data import consume_ribs_and_update_message_upto
+from hege.utils import utils
 
-
-with open("config.json", "r") as f:
+with open("/app/config.json", "r") as f:
     config = json.load(f)
 DUMP_INTERVAL = config["bgpatom"]["dump_interval"]
 BGPATOM_META_DATA_TOPIC = config["bgpatom"]["meta_data_topic"]

@@ -2,7 +2,7 @@ import json
 
 from hege.bcscore.bgpatom_loader import BGPAtomLoader
 from hege.bcscore.viewpoint import ViewPoint
-import utils
+from hege.utils import utils
 
 with open("/app/config.json", "r") as f:
     config = json.load(f)

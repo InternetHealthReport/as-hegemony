@@ -1,5 +1,5 @@
-import utils
-from kafkadata import create_consumer_and_set_offset, consume_stream
+from hege.utils import utils
+from hege.utils.kafka_data import create_consumer_and_set_offset, consume_stream
 
 
 def consume_ribs_message_at(collector: str, rib_timestamp: int):

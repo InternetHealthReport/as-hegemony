@@ -7,7 +7,7 @@ from confluent_kafka.admin import AdminClient
 from confluent_kafka.cimpl import NewTopic, Producer
 
 
-with open("config.json", "r") as f:
+with open("/app/config.json", "r") as f:
     config = json.load(f)
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
 NO_NEW_MESSAGE_LIMIT = config["kafka"]["no_new_message_limit"]
@@ -95,3 +95,8 @@ def delete_topic(topics_list: list):
             logging.warning("Topic {} deleted".format(topic))
         except Exception as e:
             logging.warning("Failed to delete topic {}: {}".format(topic, e))
+
+
+if __name__ == "__main__":
+    delete_topic(["ihr_bgp_atom_rrc10", "ihr_bgp_atom_meta"])
+    delete_topic(["ihr_bcscore_rrc10", "ihr_bcscore_meta"])
