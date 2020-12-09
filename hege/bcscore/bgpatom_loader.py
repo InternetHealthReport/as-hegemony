@@ -59,7 +59,10 @@ class BGPAtomLoader:
 
         for peer_address in self.messages_per_peer:
             if messages_per_peer[peer_address] != self.messages_per_peer[peer_address]:
-                logging.error("number of messages received is different from messages in metadata")
+                logging.error(f"number of messages received is different from messages in metadata"
+                              f"(meta: {messages_per_peer[peer_address]}, "
+                              f"received: {self.messages_per_peer[peer_address]}, "
+                              f"peer_address: {peer_address})")
                 return False
 
         return True
