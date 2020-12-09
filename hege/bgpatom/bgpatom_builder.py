@@ -1,8 +1,7 @@
-from collections import defaultdict
 import json
 
 from hege.bgpatom.bgpatom_peer import BGPAtomPeer
-import bgpdata
+from hege.bgpatom.bgpdata import consume_ribs_and_update_message_upto
 import utils
 
 
@@ -32,7 +31,7 @@ class BGPAtomBuilder:
 
     def consume_and_calculate(self):
         next_dumped_timestamp = self.start_timestamp
-        for element in bgpdata.consume_ribs_and_update_message_upto(
+        for element in consume_ribs_and_update_message_upto(
                 self.collector, self.start_timestamp, self.end_timestamp):
 
             if element["time"] > next_dumped_timestamp:
