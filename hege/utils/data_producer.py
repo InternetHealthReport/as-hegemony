@@ -40,12 +40,12 @@ class DataProducer:
     def produce_kafka_data_at(self, producer, data_generator, timestamp: int):
         ms_timestamp = timestamp * 1000
 
-        for message, peer_address in data_generator:
-            delivery_report = partial(self.__delivery_report, peer_address)
+        for message, key in data_generator:
+            delivery_report = partial(self.__delivery_report, key)
             producer.produce(
                 self.kafka_data_topic,
                 msgpack.packb(message, use_bin_type=True),
-                peer_address,
+                key,
                 callback=delivery_report,
                 timestamp=ms_timestamp
             )

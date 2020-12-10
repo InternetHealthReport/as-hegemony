@@ -18,6 +18,7 @@
   },
   "bcscore": {
     "dump_interval": 900,
-    "meta_data_topic": "ihr_bcscore_meta"
+    "meta_data_topic": "ihr_bcscore_meta",
+    "data_topic": "ihr_bcscore"
   }
 }
