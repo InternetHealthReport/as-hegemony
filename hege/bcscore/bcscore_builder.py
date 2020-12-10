@@ -1,6 +1,7 @@
 import json
+import math
 
-from hege.bcscore.bgpatom_loader import BGPAtomLoader
+from hege.bgpatom.bgpatom_loader import BGPAtomLoader
 from hege.bcscore.viewpoint import ViewPoint
 from hege.utils import utils
 
@@ -8,36 +9,36 @@ with open("/app/config.json", "r") as f:
     config = json.load(f)
 DUMP_INTERVAL = config["bcscore"]["dump_interval"]
 BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic"]
+BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic"]
 
 
 class BCScoreBuilder:
     def __init__(self, collector: str, start_timestamp: int, end_timestamp: int):
         self.collector = collector
-        self.start_timestamp = start_timestamp
+        self.start_timestamp = math.ceil(start_timestamp/DUMP_INTERVAL) * DUMP_INTERVAL
         self.end_timestamp = end_timestamp
 
-        self.kafka_data_topic = f"ihr_bcscore_{collector}"
+        self.kafka_data_topic = BCSCORE_DATA_TOPIC
         self.kafka_meta_data_topic = BCSCORE_META_DATA_TOPIC
 
     def consume_and_calculate(self):
         for current_timestamp in range(self.start_timestamp, self.end_timestamp, DUMP_INTERVAL):
             bgpatom = self.load_bgpatom(current_timestamp)
-            yield current_timestamp, self.get_viewpoint_bcscore_generator(bgpatom)
+            yield current_timestamp, self.get_viewpoint_bcscore_generator(bgpatom, current_timestamp)
 
-    def get_viewpoint_bcscore_generator(self, bgpatom: dict):
+    def get_viewpoint_bcscore_generator(self, bgpatom: dict, atom_timestamp: int):
         for peer_address in bgpatom:
             peer_bgpatom = bgpatom[peer_address]
-            peer_bcscore = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_address)
-            for origin_asn in peer_bcscore:
-                yield peer_bcscore[origin_asn], peer_address
+            peer_bcscore_generator = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_address, atom_timestamp)
+            for bcscore_dump_data in peer_bcscore_generator:
+                yield bcscore_dump_data, peer_address
 
     def load_bgpatom(self, atom_timestamp):
-        bgpatom = BGPAtomLoader(self.collector, atom_timestamp).load_bgpatom()
+        bgpatom = BGPAtomLoader(self.collector, atom_timestamp).load_data()
         return bgpatom
 
-    @staticmethod
-    def calculate_viewpoint_bcscore(bgpatom: dict, peer_address: str):
-        viewpoint = ViewPoint(peer_address, bgpatom)
+    def calculate_viewpoint_bcscore(self, bgpatom: dict, peer_address: str, atom_timestamp: int):
+        viewpoint = ViewPoint(peer_address, self.collector, bgpatom, atom_timestamp)
         return viewpoint.calculate_viewpoint_bcscore()
 
 

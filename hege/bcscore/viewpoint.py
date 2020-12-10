@@ -1,17 +1,21 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 import radix
 import json
 import logging
 
-from hege.bcscore.bgpatom_loader import BGPAtomLoader
+from hege.bgpatom.bgpatom_loader import BGPAtomLoader
 from hege.utils import utils
 
 
 class ViewPoint:
-    def __init__(self, ip_address, bgpatom):
+    def __init__(self, ip_address: str, collector: str, bgpatom: dict, timestamp: int):
         self.peer_address = ip_address
+        self.collector = collector
         self.bgpatom = bgpatom
+        self.timestamp = timestamp
+
         self.prefixes_weight = radix.Radix()
+        self.peer_asn = None
 
         self.pow_of_two = [2 ** i for i in range(33)[::-1]]
 
@@ -39,9 +43,19 @@ class ViewPoint:
             for prefix, origin_as in self.bgpatom[aspath]:
                 self.prefixes_weight.add(prefix)
 
+    def set_peer_asn(self):
+        possible_peer_asn = list()
+        for aspath in self.bgpatom:
+            if len(aspath) == 0:
+                continue
+            possible_peer_asn.append(aspath[0])
+        self.peer_asn = Counter(possible_peer_asn).most_common()[0][0]
+
     def calculate_viewpoint_bcscore(self):
         logging.debug(f"start calculating bcscore ({self.peer_address})")
         self.calculate_prefixes_weight()
+        self.set_peer_asn()
+
         bcscore = defaultdict(lambda: defaultdict(int))
         for aspath in self.bgpatom:
             weight_per_asn = self.calculate_accumulated_weight(aspath)
@@ -50,7 +64,10 @@ class ViewPoint:
                 for asn in aspath:
                     local_graph[asn] += weight_per_asn[origin_asn]
                 local_graph[origin_asn] += weight_per_asn[origin_asn]
-        return self.normalized_bcscore_value(bcscore)
+
+        normalized_bcscore = self.normalized_bcscore_value(bcscore)
+        for origin_asn in normalized_bcscore:
+            yield self.format_dump_data(normalized_bcscore[origin_asn], origin_asn)
 
     def calculate_accumulated_weight(self, aspath):
         weight_per_asn = defaultdict(int)
@@ -75,6 +92,16 @@ class ViewPoint:
             bcscore.pop(origin_asn)
 
         return bcscore
+
+    def format_dump_data(self, bcscore: dict, scope: str):
+        return {
+            "bcscore": bcscore,
+            "scope": scope,
+            "peer_address": self.peer_address,
+            "peer_asn": self.peer_asn,
+            "collector": self.collector,
+            "timestamp": self.timestamp
+        }
 
 
 def debug__test1(collector: str, timestamp: int):
