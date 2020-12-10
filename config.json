@@ -1,0 +1,23 @@
+{
+  "kafka": {
+    "bootstrap_servers": "kafka:9092",
+    "no_new_message_limit": 5,
+    "default_topic_config": {
+      "num_partitions": 1,
+      "replication_factor": 1,
+      "config": {
+        "retention.ms": "604800000000"
+      }
+    }
+  },
+  "bgpatom": {
+    "full_fleet_threshold": 600000,
+    "dump_interval": 900,
+    "prefixes_in_atom_batch_size": 50,
+    "meta_data_topic": "ihr_bgp_atom_meta"
+  },
+  "bcscore": {
+    "dump_interval": 900,
+    "meta_data_topic": "ihr_bcscore_meta"
+  }
+}
