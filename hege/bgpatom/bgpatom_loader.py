@@ -7,6 +7,7 @@ from hege.utils.data_loader import DataLoader
 
 with open("/app/config.json", "r") as f:
     config = json.load(f)["bgpatom"]
+BGPATOM_DATA_TOPIC = config["data_topic"]
 BGPATOM_META_DATA_TOPIC = config["meta_data_topic"]
 
 
@@ -14,7 +15,8 @@ class BGPAtomLoader(DataLoader):
     def __init__(self, collector: str, timestamp: int):
         super().__init__(timestamp)
         self.collector = collector
-        self.topic = f"ihr_bgp_atom_{collector}"
+        self.topic = f"{BGPATOM_DATA_TOPIC}_{collector}"
+        self.metadata_topic = f"{BGPATOM_META_DATA_TOPIC}_{collector}"
         logging.debug(f"start consuming from {self.topic} at {timestamp}")
 
     @staticmethod
@@ -34,34 +36,12 @@ class BGPAtomLoader(DataLoader):
 
         self.messages_per_peer[peer_address] += 1
 
-    def cross_check_with_meta_data(self):
-        consumer = kafka_data.create_consumer_and_set_offset(BGPATOM_META_DATA_TOPIC, self.timestamp)
-        messages_per_peer = defaultdict(int)
-
-        for message, _ in kafka_data.consume_stream(consumer):
-            message_timestamp = message["timestamp"]
-            if message_timestamp != self.timestamp:
-                break
-            meta = message["messages_per_peer"]
-            for peer_address in meta:
-                messages_per_peer[peer_address] += meta[peer_address]
-
-        for peer_address in self.messages_per_peer:
-            if messages_per_peer[peer_address] != self.messages_per_peer[peer_address]:
-                logging.error(f"number of messages received is different from messages in metadata"
-                              f"(meta: {messages_per_peer[peer_address]}, "
-                              f"received: {self.messages_per_peer[peer_address]}, "
-                              f"peer_address: {peer_address})")
-                return False
-
-        return True
-
 
 if __name__ == "__main__":
     bgpatom_time_string = "2020-08-01T00:00:00"
     bgpatom_timestamp = utils.str_datetime_to_timestamp(bgpatom_time_string)
 
-    test_collector = "rrc10"
+    test_collector = "rrc00"
     bgpatom_loader = BGPAtomLoader(test_collector, bgpatom_timestamp)
     bgpatom = bgpatom_loader.load_data()
 
