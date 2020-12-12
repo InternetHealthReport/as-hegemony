@@ -7,6 +7,7 @@ from hege.utils import utils
 with open("/app/config.json", "r") as f:
     config = json.load(f)
 DUMP_INTERVAL = config["bgpatom"]["dump_interval"]
+BGPATOM_DATA_TOPIC = config["bgpatom"]["data_topic"]
 BGPATOM_META_DATA_TOPIC = config["bgpatom"]["meta_data_topic"]
 
 
@@ -17,8 +18,8 @@ class BGPAtomBuilder:
         self.end_timestamp = end_timestamp
         self.bgpatom_peers = dict()
 
-        self.kafka_data_topic = f"ihr_bgp_atom_{collector}"
-        self.kafka_meta_data_topic = BGPATOM_META_DATA_TOPIC
+        self.kafka_data_topic = f"{BGPATOM_DATA_TOPIC}_{collector}"
+        self.kafka_meta_data_topic = f"{BGPATOM_META_DATA_TOPIC}_{collector}"
 
     def get_bgpatom_peer(self, peer_address: str):
         if peer_address not in self.bgpatom_peers:

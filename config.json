@@ -14,7 +14,8 @@
     "full_fleet_threshold": 600000,
     "dump_interval": 900,
     "prefixes_in_atom_batch_size": 50,
-    "meta_data_topic": "ihr_bgp_atom_meta"
+    "meta_data_topic": "ihr_bgp_atom_meta",
+    "data_topic": "ihr_bgp_atom"
   },
   "bcscore": {
     "dump_interval": 900,

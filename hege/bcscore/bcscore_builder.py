@@ -18,8 +18,8 @@ class BCScoreBuilder:
         self.start_timestamp = math.ceil(start_timestamp/DUMP_INTERVAL) * DUMP_INTERVAL
         self.end_timestamp = end_timestamp
 
-        self.kafka_data_topic = BCSCORE_DATA_TOPIC
-        self.kafka_meta_data_topic = BCSCORE_META_DATA_TOPIC
+        self.kafka_data_topic = f"{BCSCORE_DATA_TOPIC}_{collector}"
+        self.kafka_meta_data_topic = f"{BCSCORE_META_DATA_TOPIC}_{collector}"
 
     def consume_and_calculate(self):
         for current_timestamp in range(self.start_timestamp, self.end_timestamp, DUMP_INTERVAL):
