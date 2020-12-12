@@ -41,15 +41,31 @@ class DataProducer:
         ms_timestamp = timestamp * 1000
 
         for message, key in data_generator:
-            delivery_report = partial(self.__delivery_report, key)
-            producer.produce(
-                self.kafka_data_topic,
-                msgpack.packb(message, use_bin_type=True),
-                key,
-                callback=delivery_report,
-                timestamp=ms_timestamp
-            )
-            producer.poll(0)
+            try:
+                delivery_report = partial(self.__delivery_report, key)
+                producer.produce(
+                    self.kafka_data_topic,
+                    msgpack.packb(message, use_bin_type=True),
+                    key,
+                    callback=delivery_report,
+                    timestamp=ms_timestamp
+                )
+                producer.poll(0)
+
+            except BufferError:
+                logging.warning('buffer error, the queue must be full! Flushing...')
+                producer.flush()
+
+                logging.info('Queue flushed, try re-write previous message')
+                producer.produce(
+                    self.kafka_data_topic,
+                    msgpack.packb(message, use_bin_type=True),
+                    key,
+                    callback=delivery_report,
+                    timestamp=ms_timestamp
+                )
+                producer.poll(0)
+
         producer.flush()
 
     def produce_kafka_meta_data_at(self, producer, timestamp: int):
