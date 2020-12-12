@@ -1,6 +1,20 @@
 version: "3"
 
 services:
+
+  debug:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: /bin/bash
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     environment:
@@ -20,40 +34,105 @@ services:
     depends_on:
       - zookeeper
 
-  bgpstream-rib:
+  bgpstream-rib-rrc10:
     image: 'pora/bgpstream:latest'
     volumes:
       - '/mnt/data-raid/pora-cache/log:/log'
       - '/mnt/data-raid/pora-cache/cache:/cache'
       - '/home/elab/.pora/prefixes-ashege:/app'
     working_dir: '/app'
-    command: python3 /app/produce_bgpdata.py -t ribs --collector rrc10 --startTime 2020-08-01T00:00:00 --endTime 2020-08-02T00:00:00
+    command: python3 /app/produce_bgpdata.py -t ribs --collector rrc10 --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
     tty: true
     depends_on:
       - zookeeper
       - kafka
 
-  bgpstream-update:
+  bgpstream-update-rrc10:
     image: 'pora/bgpstream:latest'
     volumes:
       - '/mnt/data-raid/pora-cache/log:/log'
       - '/mnt/data-raid/pora-cache/cache:/cache'
       - '/home/elab/.pora/prefixes-ashege:/app'
     working_dir: '/app'
-    command: python3 /app/produce_bgpdata.py -t updates --collector rrc10 --startTime 2020-08-01T00:00:00 --endTime 2020-08-02T00:00:00
+    command: python3 /app/produce_bgpdata.py -t updates --collector rrc10 --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
     tty: true
     depends_on:
       - zookeeper
       - kafka
 
-  debug:
+  bgpstream-rib-rrc00:
     image: 'pora/bgpstream:latest'
     volumes:
       - '/mnt/data-raid/pora-cache/log:/log'
       - '/mnt/data-raid/pora-cache/cache:/cache'
       - '/home/elab/.pora/prefixes-ashege:/app'
     working_dir: '/app'
-    command: /bin/bash
+    command: python3 /app/produce_bgpdata.py -t ribs --collector rrc00 --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
+  bgpstream-update-rrc00:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: python3 /app/produce_bgpdata.py -t updates --collector rrc00 --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
+  bgpstream-rib-linx:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: python3 /app/produce_bgpdata.py -t ribs --collector route-views.linx --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
+  bgpstream-update-linx:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: python3 /app/produce_bgpdata.py -t updates --collector route-views.linx --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
+  bgpstream-rib-route-views2:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: python3 /app/produce_bgpdata.py -t ribs --collector route-views2 --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
+    tty: true
+    depends_on:
+      - zookeeper
+      - kafka
+
+  bgpstream-update-route-views2:
+    image: 'pora/bgpstream:latest'
+    volumes:
+      - '/mnt/data-raid/pora-cache/log:/log'
+      - '/mnt/data-raid/pora-cache/cache:/cache'
+      - '/home/elab/.pora/prefixes-ashege:/app'
+    working_dir: '/app'
+    command: python3 /app/produce_bgpdata.py -t updates --collector route-views2 --startTime 2020-08-01T00:00:00 --endTime 2020-08-01T01:00:00
     tty: true
     depends_on:
       - zookeeper
