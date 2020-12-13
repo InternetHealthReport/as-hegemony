@@ -43,9 +43,10 @@ if __name__ == "__main__":
     bcscore_time_string = "2020-08-01T00:00:00"
     bcscore_timestamp = utils.str_datetime_to_timestamp(bcscore_time_string)
 
-    loaded_bcscore = BCSCORELoader(bcscore_timestamp).load_data()
+    test_collector = "rrc10"
+    loaded_bcscore = BCSCORELoader(test_collector, bcscore_timestamp).load_data()
 
-    print(f"completed: bcscore loaded at {bcscore_time_string}")
+    print(f"completed: bcscore loaded at {bcscore_time_string} for {test_collector}")
     print(f"number of asn: {len(loaded_bcscore)}")
     for scope in loaded_bcscore:
         print(f"scope asn: {scope}")
