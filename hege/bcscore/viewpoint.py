@@ -40,8 +40,9 @@ class ViewPoint:
 
     def load_ipv4_prefixes(self):
         for aspath in self.bgpatom:
-            for prefix, origin_as in self.bgpatom[aspath]:
-                self.prefixes_weight.add(prefix)
+            for prefix, _ in self.bgpatom[aspath]:
+                if not utils.is_ip_v6(prefix):
+                    self.prefixes_weight.add(prefix)
 
     def set_peer_asn(self):
         possible_peer_asn = list()
@@ -72,8 +73,9 @@ class ViewPoint:
     def calculate_accumulated_weight(self, aspath):
         weight_per_asn = defaultdict(int)
         for prefix, origin_asn in self.bgpatom[aspath]:
-            node = self.prefixes_weight.search_exact(prefix)
-            weight_per_asn[origin_asn] += node.data["weight"]
+            if not utils.is_ip_v6(prefix):
+                node = self.prefixes_weight.search_exact(prefix)
+                weight_per_asn[origin_asn] += node.data["weight"]
         return weight_per_asn
 
     @staticmethod
