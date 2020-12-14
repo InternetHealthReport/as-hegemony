@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 .idea
+docker/dev-docker-compose.yml
 
 # Distribution / packaging
 .Python
