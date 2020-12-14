@@ -1,5 +1,10 @@
+import json
 from hege.utils import utils
 from hege.utils.kafka_data import create_consumer_and_set_offset, consume_stream
+
+with open("/app/config.json", "r") as f:
+    config = json.load(f)
+RIB_BUFFER_INTERVAL = config["bgp_data"]["rib_buffer_interval"]
 
 
 def consume_ribs_message_at(collector: str, rib_timestamp: int):
@@ -9,11 +14,12 @@ def consume_ribs_message_at(collector: str, rib_timestamp: int):
     for bgp_msg, _ in consume_stream(consumer):
         dump_timestamp = bgp_msg["rec"]["time"]
 
-        if dump_timestamp != rib_timestamp:
-            return
+        if dump_timestamp - rib_timestamp > RIB_BUFFER_INTERVAL:
+            return dict()
 
         for element in bgp_msg["elements"]:
             element_type = element["type"]
+            element["time"] = rib_timestamp
             assert element_type == "R", "consumer yield none RIBS message"
             yield element
 
@@ -27,7 +33,7 @@ def consume_updates_message_upto(collector: str, start_timestamp: int, end_times
         dump_timestamp = bgp_msg["rec"]["time"]
 
         if dump_timestamp >= end_timestamp:
-            return
+            return dict()
 
         for element in bgp_msg["elements"]:
             element_type = element["type"]

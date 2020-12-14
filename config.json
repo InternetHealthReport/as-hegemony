@@ -10,6 +10,9 @@
       }
     }
   },
+  "bgp_data": {
+    "rib_buffer_interval": 1800
+  },
   "bgpatom": {
     "full_fleet_threshold": 600000,
     "dump_interval": 900,
