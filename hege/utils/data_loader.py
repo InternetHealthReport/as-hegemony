@@ -52,5 +52,5 @@ class DataLoader:
                               f"meta: {messages_per_peer[peer_address]}, "
                               f"received: {self.messages_per_peer[peer_address]}, "
                               f"key: {peer_address} )")
-                return False
+                continue
         return True

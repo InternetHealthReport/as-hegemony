@@ -56,7 +56,7 @@ class DataProducer:
                 logging.warning('buffer error, the queue must be full! Flushing...')
                 producer.flush()
 
-                logging.info('Queue flushed, try re-write previous message')
+                logging.info('queue flushed, try re-write previous message')
                 producer.produce(
                     self.kafka_data_topic,
                     msgpack.packb(message, use_bin_type=True),
@@ -81,6 +81,7 @@ class DataProducer:
             callback=self.__meta_delivery_report,
             timestamp=ms_timestamp
         )
+        producer.poll(0)
         producer.flush()
 
     def __delivery_report(self, peer_address, err, _):
