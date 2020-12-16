@@ -24,5 +24,10 @@
     "dump_interval": 900,
     "meta_data_topic": "ihr_bcscore_meta",
     "data_topic": "ihr_bcscore"
+  },
+  "hege": {
+    "dump_interval": 900,
+    "data_topic": "ihr_hegemony",
+    "meta_data_topic": "ihr_hegemony_meta"
   }
 }
