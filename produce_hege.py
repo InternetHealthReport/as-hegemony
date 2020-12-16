@@ -6,9 +6,8 @@ from hege.utils.data_producer import DataProducer
 from hege.utils import utils
 
 if __name__ == "__main__":
-    text = """This script consumes BGP Data from selected collector(s)
-    and produce bgpatom between --start_time and --end_time. It then
-    analyzes and publishes BGP atom to kafka cluster"""
+    text = """This script consumes all collectors bcscore and produce
+    as hegemony score between --start_time and --end_time."""
 
     parser = argparse.ArgumentParser(description=text)
     parser.add_argument("--start_time", "-s", help="Choose the start time")
