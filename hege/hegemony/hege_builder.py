@@ -23,13 +23,20 @@ class HegeBuilder:
         for timestamp in range(self.start_timestamp, self.end_timestamp, INTERVAL):
             hege_builder_helper = HegeBuilderHelper(self.collectors, timestamp)
             hege_builder_helper.build_hegemony_score()
-            yield timestamp, self.dump_as_hegemony_score(hege_builder_helper)
+            yield timestamp, self.dump_as_hegemony_score(hege_builder_helper, timestamp)
 
-    @staticmethod
-    def dump_as_hegemony_score(hege_builder_helper):
+    def dump_as_hegemony_score(self, hege_builder_helper, timestamp: int):
         hegemony_scope = hege_builder_helper.hegemony_score
         for scope in hegemony_scope:
-            yield hegemony_scope[scope], scope
+            yield self.format_message(hegemony_scope[scope], scope, timestamp), scope
+
+    @staticmethod
+    def format_message(scope_hege: dict, scope: str, timestamp: int):
+        return {
+            "scope_hegemony": scope_hege,
+            "timestamp": timestamp,
+            "scope": scope
+        }
 
 
 if __name__ == "__main__":
