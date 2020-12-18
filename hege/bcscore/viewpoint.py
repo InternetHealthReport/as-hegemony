@@ -5,6 +5,7 @@ import logging
 
 from hege.bgpatom.bgpatom_loader import BGPAtomLoader
 from hege.utils import utils
+SCOPE_ASN = "-1"
 
 
 class ViewPoint:
@@ -76,6 +77,7 @@ class ViewPoint:
             if not utils.is_ip_v6(prefix):
                 node = self.prefixes_weight.search_exact(prefix)
                 weight_per_asn[origin_asn] += node.data["weight"]
+                weight_per_asn[SCOPE_ASN] += node.data["weight"]
         return weight_per_asn
 
     @staticmethod
