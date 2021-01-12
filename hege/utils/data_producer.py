@@ -33,7 +33,7 @@ class DataProducer:
 
         self.messages_per_peer = dict()
         self.produce_kafka_data_at(producer, data_generator, timestamp)
-        self.produce_kafka_meta_data_at(producer, timestamp)
+        # self.produce_kafka_meta_data_at(producer, timestamp)
 
         logging.debug(f"({self.kafka_data_topic}, {timestamp}): DONE")
 
