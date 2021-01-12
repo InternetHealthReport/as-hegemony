@@ -6,10 +6,11 @@ from hege.bcscore.bcscore_loader import BCSCORELoader
 from hege.utils.utils import str_datetime_to_timestamp
 
 
-class HegeBuilderHelper:
+class HegeBuilderAS:
     def __init__(self, collectors: list, timestamp: int):
         self.collectors = collectors
         self.timestamp = timestamp
+
         self.hegemony_score_list = defaultdict(lambda: defaultdict(list))
         self.hegemony_score = defaultdict(dict)
 
@@ -74,7 +75,7 @@ if __name__ == "__main__":
     bcscore_timestamp = str_datetime_to_timestamp(bcscore_time_string)
 
     test_collectors = ["rrc00", "rrc10", "route-views.linx", "route-views2"]
-    hege_builder = HegeBuilderHelper(test_collectors, bcscore_timestamp)
+    hege_builder = HegeBuilderAS(test_collectors, bcscore_timestamp)
     hege_builder.build_hegemony_score()
 
     with open("/app/test-hegemony-builder-result.json", "w") as f:

@@ -1,6 +1,6 @@
 import json
 
-from hege.hegemony.hege_builder_helper import HegeBuilderHelper
+from hege.hegemony.hege_builder_asn import HegeBuilderAS
 from hege.utils import utils
 
 with open("/app/config.json", "r") as f:
@@ -21,7 +21,7 @@ class HegeBuilder:
 
     def consume_and_calculate(self):
         for timestamp in range(self.start_timestamp, self.end_timestamp, INTERVAL):
-            hege_builder_helper = HegeBuilderHelper(self.collectors, timestamp)
+            hege_builder_helper = HegeBuilderAS(self.collectors, timestamp)
             hege_builder_helper.build_hegemony_score()
             yield timestamp, self.dump_as_hegemony_score(hege_builder_helper, timestamp)
 
