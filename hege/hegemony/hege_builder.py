@@ -1,27 +1,40 @@
 import json
 
+from hege.hegemony.hege_builder_prefix import HegeBuilderPrefix
 from hege.hegemony.hege_builder_asn import HegeBuilderAS
 from hege.utils import utils
 
 with open("/app/config.json", "r") as f:
     config = json.load(f)
-HEGE_DATA_TOPIC = config["hege"]["data_topic"]
-HEGE_META_DATA_TOPIC = config["hege"]["meta_data_topic"]
+AS_HEGE_DATA_TOPIC = config["hege"]["data_topic__as"]
+AS_HEGE_META_DATA_TOPIC = config["hege"]["meta_data_topic__as"]
+
+PREFIX_HEGE_DATA_TOPIC = config["hege"]["data_topic__prefix"]
+PREFIX_HEGE_META_DATA_TOPIC = config["hege"]["meta_data_topic__prefix"]
+
 INTERVAL = config["hege"]["dump_interval"]
 
 
 class HegeBuilder:
-    def __init__(self, collectors, start_timestamp: int, end_timestamp: int):
+    def __init__(self, collectors, start_timestamp: int, end_timestamp: int, for_prefix=False):
         self.collectors = collectors
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.for_prefix = for_prefix
 
-        self.kafka_data_topic = HEGE_DATA_TOPIC
-        self.kafka_meta_data_topic = HEGE_META_DATA_TOPIC
+        if self.for_prefix:
+            self.kafka_data_topic = PREFIX_HEGE_DATA_TOPIC
+            self.kafka_meta_data_topic = PREFIX_HEGE_META_DATA_TOPIC
+        else:
+            self.kafka_data_topic = AS_HEGE_DATA_TOPIC
+            self.kafka_meta_data_topic = AS_HEGE_META_DATA_TOPIC
 
     def consume_and_calculate(self):
         for timestamp in range(self.start_timestamp, self.end_timestamp, INTERVAL):
-            hege_builder_helper = HegeBuilderAS(self.collectors, timestamp)
+            if self.for_prefix:
+                hege_builder_helper = HegeBuilderPrefix(self.collectors, timestamp)
+            else:
+                hege_builder_helper = HegeBuilderAS(self.collectors, timestamp)
             hege_builder_helper.build_hegemony_score()
             yield timestamp, self.dump_as_hegemony_score(hege_builder_helper, timestamp)
 

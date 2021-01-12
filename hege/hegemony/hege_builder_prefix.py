@@ -12,7 +12,8 @@ class HegeBuilderPrefix:
         self.timestamp = timestamp
 
         self.prefixes_announced_by_peers = defaultdict(int)
-        self.prefix_to_bcscore = defaultdict(lambda: defaultdict(int))
+        self._hegemony_score = defaultdict(lambda: defaultdict(int))
+        self.hegemony_score = dict()
 
     def build_hegemony_score(self):
         for collector in self.collectors:
@@ -33,9 +34,9 @@ class HegeBuilderPrefix:
         for aspath in peer_atom:
             for prefix, origin_asn in peer_atom[aspath]:
                 self.prefixes_announced_by_peers[prefix] += 1
-                self.prefix_to_bcscore[prefix][origin_asn] += 1
+                self._hegemony_score[prefix][origin_asn] += 1
                 for asn in aspath:
-                    self.prefix_to_bcscore[prefix][asn] += 1
+                    self._hegemony_score[prefix][asn] += 1
 
     def calculate_and_yield_hegemony(self):
         total_prefix = len(self.prefixes_announced_by_peers)
@@ -49,15 +50,15 @@ class HegeBuilderPrefix:
             if bounded_length == 0:
                 continue
             result = dict()
-            for asn in self.prefix_to_bcscore[prefix]:
-                sum_bcscore = self.prefix_to_bcscore[prefix][asn]
+            for asn in self._hegemony_score[prefix]:
+                sum_bcscore = self._hegemony_score[prefix][asn]
                 if sum_bcscore > upper_bound:
                     result[asn] = 1
                 elif sum_bcscore <= lower_bound:
                     continue
                 else:
                     result[asn] = (sum_bcscore - lower_bound)/bounded_length
-            yield prefix, result
+            self.hegemony_score[prefix] = result
 
         logging.debug(f"completed calculating all prefixes hegemony")
         return

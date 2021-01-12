@@ -27,8 +27,8 @@
   },
   "hege": {
     "dump_interval": 900,
-    "data_topic": "ihr_hegemony",
-    "meta_data_topic": "ihr_hegemony_meta",
+    "data_topic__as": "ihr_hegemony",
+    "meta_data_topic__as": "ihr_hegemony_meta",
     "data_topic__prefix": "ihr_prefix_hegemony",
     "meta_data_topic__prefix": "ihr_prefix_hegemony_meta"
   }
