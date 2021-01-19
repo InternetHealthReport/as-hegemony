@@ -75,6 +75,20 @@ def bgp_message(start_time: str, end_time: str, collectors: str, message_type: s
     return template
 
 
+def bgp_atom_builder(start_time: str, end_time: str, collectors: str):
+    template = ""
+    for collector in collectors:
+        command = f"python3 " \
+                  f"/app/produce_bgpatom.py " \
+                  f"-c {collector} " \
+                  f"-s {start_time} " \
+                  f"-e {end_time}"
+        worker_name = f"bgpatom-{collector}"
+        depended = ["zookeeper", "kafka"]
+        template += build_template(worker_name, command, depended)
+    return template
+
+
 def bcscore_builder(start_time: str, end_time: str, collectors: str):
     template = ""
     for collector in collectors:
@@ -130,6 +144,8 @@ if __name__ == "__main__":
 
     docker_compose_file += bgp_message(start, end, collectors_list, "ribs")
     docker_compose_file += bgp_message(start, end, collectors_list, "updates")
+
+    docker_compose_file += bgp_atom_builder(start, end, collectors_list)
 
     docker_compose_file += bcscore_builder(start, end, collectors_list)
 
