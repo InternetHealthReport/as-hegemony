@@ -19,14 +19,14 @@ class DataProducer:
         start_timestamp = self.data_builder.start_timestamp
         end_timestamp = self.data_builder.end_timestamp
 
-        logging.debug(f"start dumping bcscore to {self.kafka_data_topic}, "
+        logging.debug(f"start dumping to {self.kafka_data_topic}, "
                       f"between {start_timestamp} and {end_timestamp}")
 
         for timestamp, data_generator in self.data_builder.consume_and_calculate():
             producer = prepare_producer()
             self.produce_kafka_messages_at(producer, data_generator, timestamp)
 
-        logging.debug(f"successfully dumped bgpatom: ({self.kafka_data_topic}, {start_timestamp} - {end_timestamp})")
+        logging.debug(f"successfully dumped: ({self.kafka_data_topic}, {start_timestamp} - {end_timestamp})")
 
     def produce_kafka_messages_at(self, producer, data_generator, timestamp: int):
         logging.debug(f"({self.kafka_data_topic}, {timestamp}): start producing ...")
