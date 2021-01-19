@@ -1,7 +1,7 @@
 {
   "kafka": {
     "bootstrap_servers": "kafka:9092",
-    "no_new_message_limit": 5,
+    "no_new_message_limit": 3600,
     "default_topic_config": {
       "num_partitions": 1,
       "replication_factor": 1,
