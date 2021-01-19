@@ -1,44 +1,62 @@
 import logging
 import json
+import time
 
 import msgpack
-from confluent_kafka import Consumer, TopicPartition
+from confluent_kafka import Consumer, TopicPartition, KafkaError
 from confluent_kafka.admin import AdminClient
-from confluent_kafka.cimpl import NewTopic, Producer
+from confluent_kafka.cimpl import NewTopic, Producer, KafkaException
 
 
 with open("/app/config.json", "r") as f:
     config = json.load(f)
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
 NO_NEW_MESSAGE_LIMIT = config["kafka"]["no_new_message_limit"]
+LEADER_WAIT_MINUTES = config["kafka"]["leader_wait_minutes"]
 DEFAULT_TOPIC_CONFIG = config["kafka"]["default_topic_config"]
 
 
 def create_consumer_and_set_offset(topic: str, timestamp: int):
-    consumer = Consumer({
-        'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
-        'group.id': 'ashege_consumer',
-        'session.timeout.ms': 600000,
-        'max.poll.interval.ms': 600000,
-        'enable.auto.commit': False,
-        'auto.offset.reset': 'earliest'
-    })
-    set_consumer_time_offset(consumer, topic, timestamp)
+    wait_for_leader_count = 0
+    while wait_for_leader_count < LEADER_WAIT_MINUTES:
+        try:
+            consumer = Consumer({
+                'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
+                'group.id': 'ashege_consumer',
+                'session.timeout.ms': 600000,
+                'max.poll.interval.ms': 600000,
+                'enable.auto.commit': False,
+                'auto.offset.reset': 'earliest'
+            })
+
+            timestamp_ms = timestamp * 1000
+            time_offset = consumer.offsets_for_times(
+                [TopicPartition(
+                    topic,
+                    partition=0,
+                    offset=timestamp_ms
+                )], timeout=1)
+
+            if time_offset == -1:
+                consumer.close()
+                wait_for_leader_count += 1
+                time.sleep(60)
+                continue
+
+            consumer.assign(time_offset)
+
+        except KafkaException as ke:
+            if ke.args[0].code() == KafkaError.LEADER_NOT_AVAILABLE:
+                consumer.close()
+                wait_for_leader_count += 1
+                time.sleep(60)
+                continue
+            else:
+                raise Exception("cannot assign topic partition")
+        else:
+            raise Exception("cannot assign topic partition")
+
     return consumer
-
-
-def set_consumer_time_offset(consumer: Consumer, topic: str, timestamp: int):
-    timestamp_ms = timestamp * 1000
-    time_offset = consumer.offsets_for_times(
-        [TopicPartition(
-            topic,
-            partition=0,
-            offset=timestamp_ms
-        )], timeout=1)
-
-    if time_offset == -1:
-        raise Exception("cannot assign topic partition")
-    consumer.assign(time_offset)
 
 
 def consume_stream(consumer: Consumer):
@@ -57,6 +75,7 @@ def consume_stream(consumer: Consumer):
             logging.error(f"consumer error {kafka_msg.error()}")
             continue
 
+        number_of_empty_message = 0
         message = msgpack.unpackb(kafka_msg.value(), raw=False)
         yield message, kafka_msg
 
@@ -98,5 +117,9 @@ def delete_topic(topics_list: list):
 
 
 if __name__ == "__main__":
-    delete_topic(["ihr_bgp_atom_rrc10", "ihr_bgp_atom_meta"])
-    delete_topic(["ihr_bcscore_rrc10", "ihr_bcscore_meta"])
+    # for collector in ["route-views.linx", "route-views2", "rrc00", "rrc10"]:
+    #     delete_topic([f"ihr_bcscore_{collector}", f"ihr_bcscore_meta_{collector}"])
+
+    delete_topic(["ihr_prefix_hegemony", "ihr_prefix_hegemony_meta"])
+    # delete_topic(["ihr_bcscore_meta", "ihr_bcscore", "ihr_bgp_atom_meta", "ihr_bgp_atom_rrc00", "ihr_bgp_atom_rrc10"])
+    # delete_topic(["ihr_hegemony", "ihr_hegemony_meta"])
