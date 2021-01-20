@@ -29,8 +29,10 @@ if __name__ == "__main__":
     end_time_string = args.end_time
 
     FORMAT = '%(asctime)s %(processName)s %(message)s'
+
+    log_filename_suffix = "prefix" if args.prefix else "asn"
     logging.basicConfig(
-        format=FORMAT, filename=f"/log/ihr-kafka-hegemony.log",
+        format=FORMAT, filename=f"/log/ihr-kafka-hegemony-{log_filename_suffix}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
     )
 
