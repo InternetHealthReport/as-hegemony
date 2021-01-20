@@ -20,10 +20,8 @@ class DataLoader:
                 break
             self.read_message(message, loading_data)
 
-        if self.cross_check_with_meta_data():
-            return loading_data
-        else:
-            return dict()
+        self.cross_check_with_meta_data()
+        return loading_data
 
     def prepare_load_data(self):
         raise NotImplementedError
@@ -43,14 +41,13 @@ class DataLoader:
             if message_timestamp != self.timestamp:
                 break
             meta = message["messages_per_peer"]
-            for peer_address in meta:
-                messages_per_peer[peer_address] += meta[peer_address]
+            for key in meta:
+                messages_per_peer[key] += meta[key]
 
-        for peer_address in self.messages_per_peer:
-            if messages_per_peer[peer_address] != self.messages_per_peer[peer_address]:
+        for key in self.messages_per_peer:
+            if messages_per_peer[key] != self.messages_per_peer[key]:
                 logging.error(f"number of messages received is different from messages in metadata ( "
-                              f"meta: {messages_per_peer[peer_address]}, "
-                              f"received: {self.messages_per_peer[peer_address]}, "
-                              f"key: {peer_address} )")
+                              f"meta: {messages_per_peer[key]}, "
+                              f"received: {self.messages_per_peer[key]}, "
+                              f"key: {key} )")
                 continue
-        return True
