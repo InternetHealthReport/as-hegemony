@@ -78,5 +78,5 @@ if __name__ == "__main__":
     hege_builder = HegeBuilderAS(test_collectors, bcscore_timestamp)
     hege_builder.build_hegemony_score()
 
-    with open("/app/test-hegemony-builder-result.json", "w") as f:
+    with open("/app/test-asn-hegemony-builder-result.json", "w") as f:
         json.dump(hege_builder.hegemony_score, f, indent=4)
