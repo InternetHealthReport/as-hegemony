@@ -1,6 +1,7 @@
 import logging
 import json
 import time
+import sys
 
 import msgpack
 from confluent_kafka import Consumer, TopicPartition, KafkaError
@@ -44,6 +45,8 @@ def create_consumer_and_set_offset(topic: str, timestamp: int):
                 continue
 
             consumer.assign(time_offset)
+            logging.info(f"successfully assign consumer to {topic}, time offset at {timestamp}")
+            return consumer
 
         except KafkaException as ke:
             if ke.args[0].code() == KafkaError.LEADER_NOT_AVAILABLE:
@@ -52,11 +55,12 @@ def create_consumer_and_set_offset(topic: str, timestamp: int):
                 time.sleep(60)
                 continue
             else:
+                logging.error("KafkaException: " + ke)
                 raise Exception("cannot assign topic partition")
-        else:
-            raise Exception("cannot assign topic partition")
 
-    return consumer
+        except Exception as e:
+            logging.error(e)
+            raise e
 
 
 def consume_stream(consumer: Consumer):
@@ -117,9 +121,25 @@ def delete_topic(topics_list: list):
 
 
 if __name__ == "__main__":
-    # for collector in ["route-views.linx", "route-views2", "rrc00", "rrc10"]:
-    #     delete_topic([f"ihr_bcscore_{collector}", f"ihr_bcscore_meta_{collector}"])
+    if len(sys.argv) < 1:
+        sys.exit(0)
 
-    delete_topic(["ihr_prefix_hegemony", "ihr_prefix_hegemony_meta"])
-    # delete_topic(["ihr_bcscore_meta", "ihr_bcscore", "ihr_bgp_atom_meta", "ihr_bgp_atom_rrc00", "ihr_bgp_atom_rrc10"])
-    # delete_topic(["ihr_hegemony", "ihr_hegemony_meta"])
+    debug_collectors = ["route-views2", "route-views.linx", "rrc00", "rrc10"]
+    command = sys.argv[1]
+    if command == "delete-topic":
+        topics_name = list(map(lambda x: x.strip(), sys.argv[2].split(",")))
+        delete_topic(topics_name)
+
+    elif command == "delete-atom":
+        for c in debug_collectors:
+            delete_topic([f"ihr_bgp_atom_{c}", f"ihr_bgp_atom_meta_{c}"])
+
+    elif command == "delete-bc":
+        for c in debug_collectors:
+            delete_topic([f"ihr_bcscore_{c}", f"ihr_bcscore_meta_{c}"])
+
+    elif command == "delete-hege-asn":
+        delete_topic(["ihr_hegemony", "ihr_hegemony_meta"])
+
+    elif command == "delete-hege-prefix":
+        delete_topic(["ihr_prefix_hegemony", "ihr_prefix_hegemony_meta"])
