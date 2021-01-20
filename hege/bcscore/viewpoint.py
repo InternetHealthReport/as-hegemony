@@ -8,6 +8,14 @@ from hege.utils import utils
 SCOPE_ASN = "-1"
 
 
+def is_set_as(asn: str):
+    return asn[0] == "{"
+
+
+def get_asn_set(asn: str):
+    return asn[1: -1].split(",")
+
+
 class ViewPoint:
     def __init__(self, ip_address: str, collector: str, bgpatom: dict, timestamp: int):
         self.peer_address = ip_address
@@ -63,8 +71,10 @@ class ViewPoint:
             weight_per_asn = self.calculate_accumulated_weight(aspath)
             for origin_asn in weight_per_asn:
                 local_graph = bcscore[origin_asn]
+                asn_weight = weight_per_asn[origin_asn]
                 for asn in aspath:
-                    local_graph[asn] += weight_per_asn[origin_asn]
+                    self.set_asn_weight(asn, asn_weight, local_graph)
+
                 local_graph[origin_asn] += weight_per_asn[origin_asn]
 
         normalized_bcscore = self.normalized_bcscore_value(bcscore)
@@ -76,9 +86,22 @@ class ViewPoint:
         for prefix, origin_asn in self.bgpatom[aspath]:
             if not utils.is_ip_v6(prefix):
                 node = self.prefixes_weight.search_exact(prefix)
-                weight_per_asn[origin_asn] += node.data["weight"]
-                weight_per_asn[SCOPE_ASN] += node.data["weight"]
+                node_weight = node.data["weight"]
+                weight_per_asn[SCOPE_ASN] += node_weight
+                self.set_asn_weight(origin_asn, node_weight, weight_per_asn)
+
         return weight_per_asn
+
+    @staticmethod
+    def set_asn_weight(asn: str, weight: int, target):
+        if is_set_as(asn):
+            asn_set = get_asn_set(asn)
+            asn_set_length = len(asn_set)
+            for _asn in asn_set:
+                asn = _asn.strip()
+                target[asn] += weight / asn_set_length
+        else:
+            target[asn] += weight
 
     @staticmethod
     def normalized_bcscore_value(bcscore):

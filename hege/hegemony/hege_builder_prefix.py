@@ -27,12 +27,17 @@ class HegeBuilderPrefix:
 
         total_peers = len(loaded_bgpatom)
         for peer_id, peer_ip in enumerate(loaded_bgpatom):
-            logging.debug(f"{peer_id+1}/{total_peers}: read peer {peer_ip}'s bgpatom; {len(peer_ip)} atom loaded")
+            atoms_count = len(loaded_bgpatom[peer_ip])
+            progression = f"{peer_id+1}/{total_peers}"
+            logging.debug(f"{progression}: read peer {peer_ip}'s bgpatom; {atoms_count} atoms loaded")
             self.read_peer_atom(loaded_bgpatom[peer_ip])
 
     def read_peer_atom(self, peer_atom):
         for aspath in peer_atom:
             for prefix, origin_asn in peer_atom[aspath]:
+                if origin_asn[0] == "{" and "," not in origin_asn:
+                    origin_asn = origin_asn[1:-1]
+
                 self.prefixes_announced_by_peers[prefix] += 1
                 self._hegemony_score[prefix][origin_asn] += 1
                 for asn in aspath:
@@ -74,7 +79,6 @@ if __name__ == "__main__":
     prefix_hege_timestamp = str_datetime_to_timestamp(prefix_hege_time_string)
 
     test_collectors = ["rrc00", "rrc10", "route-views.linx", "route-views2"]
-    # test_collectors = ["rrc10"]
     hege_builder = HegeBuilderPrefix(test_collectors, prefix_hege_timestamp)
 
     test_result = dict()
