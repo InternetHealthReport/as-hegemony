@@ -56,3 +56,15 @@ python3 produce_hege.py -p -s 2020-08-01T00:00:00 -e 2020-08-01T00:15:00 -c rrc0
 python3 -m hege.hegemony.hege_loader -t 2020-08-01T00:00:00 -s as15169
 python3 -m hege.hegemony.hege_loader -t 2020-08-01T00:00:00 -s 8.8.8.8
 ```
+
+### config.json
+```json
+{
+  "kafka": {
+    "bootstrap_servers": "kafka:9092",
+    "no_new_message_limit": 60, // consumer wait 1 minute between 2 messages
+    "leader_wait_minutes": 60, // consumer wait 1 hour for offset timestamp to be available 
+    "default_topic_config": 
+  }
+}
+```
