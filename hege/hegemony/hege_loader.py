@@ -44,6 +44,7 @@ if __name__ == "__main__":
     scope = args.scope
 
     if scope:
+        print(f"search for hegemony score for {scope}")
         print(get_hegemony_score_for_scope_at(scope, selected_timestamp))
     else:
         print("please select scope")

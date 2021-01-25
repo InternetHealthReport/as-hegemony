@@ -1,5 +1,6 @@
 import json
 
+from hege.hegemony.hege_builder_mode import HegeBuilderMode
 from hege.hegemony.hege_builder_prefix import HegeBuilderPrefix
 from hege.hegemony.hege_builder_asn import HegeBuilderAS
 from hege.utils import utils
@@ -16,25 +17,27 @@ INTERVAL = config["hege"]["dump_interval"]
 
 
 class HegeBuilder:
-    def __init__(self, collectors, start_timestamp: int, end_timestamp: int, for_prefix=False):
+    def __init__(self, collectors, start_timestamp: int, end_timestamp: int, mode: HegeBuilderMode):
         self.collectors = collectors
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
-        self.for_prefix = for_prefix
+        self.mode = mode
 
-        if self.for_prefix:
-            self.kafka_data_topic = PREFIX_HEGE_DATA_TOPIC
-            self.kafka_meta_data_topic = PREFIX_HEGE_META_DATA_TOPIC
-        else:
+        if mode == HegeBuilderMode.ASN:
             self.kafka_data_topic = AS_HEGE_DATA_TOPIC
             self.kafka_meta_data_topic = AS_HEGE_META_DATA_TOPIC
+        else:
+            self.kafka_data_topic = PREFIX_HEGE_DATA_TOPIC
+            self.kafka_meta_data_topic = PREFIX_HEGE_META_DATA_TOPIC
 
     def consume_and_calculate(self):
         for timestamp in range(self.start_timestamp, self.end_timestamp, INTERVAL):
-            if self.for_prefix:
-                hege_builder_helper = HegeBuilderPrefix(self.collectors, timestamp)
-            else:
+            if self.mode == HegeBuilderMode.ASN:
                 hege_builder_helper = HegeBuilderAS(self.collectors, timestamp)
+            else:
+                is_fast_mode = self.mode == HegeBuilderMode.PREFIX_FAST
+                hege_builder_helper = HegeBuilderPrefix(self.collectors, timestamp, is_fast_mode)
+
             hege_builder_helper.build_hegemony_score()
             yield timestamp, self.dump_as_hegemony_score(hege_builder_helper, timestamp)
 
