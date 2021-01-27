@@ -134,9 +134,13 @@ if __name__ == "__main__":
         for c in debug_collectors:
             delete_topic([f"ihr_bgp_atom_{c}", f"ihr_bgp_atom_meta_{c}"])
 
-    elif command == "delete-bc":
+    elif command == "delete-bc-asn":
         for c in debug_collectors:
             delete_topic([f"ihr_bcscore_{c}", f"ihr_bcscore_meta_{c}"])
+
+    elif command == "delete-bc-prefix":
+        for c in debug_collectors:
+            delete_topic([f"ihr_bcscore_prefix_{c}", f"ihr_bcscore_prefix_meta_{c}"])
 
     elif command == "delete-hege-asn":
         delete_topic(["ihr_hegemony", "ihr_hegemony_meta"])
