@@ -8,18 +8,25 @@ from hege.utils import utils
 with open("/app/config.json", "r") as f:
     config = json.load(f)
 DUMP_INTERVAL = config["bcscore"]["dump_interval"]
-BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic"]
-BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic"]
+AS_BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic__as"]
+AS_BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic__as"]
+PREFIX_BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic__prefix"]
+PREFIX_BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic__prefix"]
 
 
 class BCScoreBuilder:
-    def __init__(self, collector: str, start_timestamp: int, end_timestamp: int):
+    def __init__(self, collector: str, start_timestamp: int, end_timestamp: int, prefix_mode=False):
         self.collector = collector
         self.start_timestamp = math.ceil(start_timestamp/DUMP_INTERVAL) * DUMP_INTERVAL
         self.end_timestamp = end_timestamp
+        self.prefix_mode = prefix_mode
 
-        self.kafka_data_topic = f"{BCSCORE_DATA_TOPIC}_{collector}"
-        self.kafka_meta_data_topic = f"{BCSCORE_META_DATA_TOPIC}_{collector}"
+        if prefix_mode:
+            self.kafka_data_topic = f"{PREFIX_BCSCORE_DATA_TOPIC}_{collector}"
+            self.kafka_meta_data_topic = f"{PREFIX_BCSCORE_META_DATA_TOPIC}_{collector}"
+        else:
+            self.kafka_data_topic = f"{AS_BCSCORE_DATA_TOPIC}_{collector}"
+            self.kafka_meta_data_topic = f"{AS_BCSCORE_META_DATA_TOPIC}_{collector}"
 
     def consume_and_calculate(self):
         for current_timestamp in range(self.start_timestamp, self.end_timestamp, DUMP_INTERVAL):
@@ -38,7 +45,7 @@ class BCScoreBuilder:
         return bgpatom
 
     def calculate_viewpoint_bcscore(self, bgpatom: dict, peer_address: str, atom_timestamp: int):
-        viewpoint = ViewPoint(peer_address, self.collector, bgpatom, atom_timestamp)
+        viewpoint = ViewPoint(peer_address, self.collector, bgpatom, atom_timestamp, self.prefix_mode)
         return viewpoint.calculate_viewpoint_bcscore()
 
 
@@ -46,7 +53,7 @@ if __name__ == "__main__":
     start_at_time_string = "2020-08-01T00:00:00"
     start_at = utils.str_datetime_to_timestamp(start_at_time_string)
 
-    end_at_time_string = "2020-08-01T00:16:00"
+    end_at_time_string = "2020-08-01T00:01:00"
     end_at = utils.str_datetime_to_timestamp(end_at_time_string)
 
     test_collector = "rrc10"

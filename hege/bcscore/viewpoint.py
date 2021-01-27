@@ -3,7 +3,6 @@ import radix
 import json
 import logging
 
-from hege.bgpatom.bgpatom_loader import BGPAtomLoader
 from hege.utils import utils
 SCOPE_ASN = "-1"
 
@@ -17,16 +16,20 @@ def get_asn_set(asn: str):
 
 
 class ViewPoint:
-    def __init__(self, ip_address: str, collector: str, bgpatom: dict, timestamp: int):
+    def __init__(self, ip_address: str, collector: str, bgpatom: dict, timestamp: int, prefix_mode=False):
         self.peer_address = ip_address
         self.collector = collector
         self.bgpatom = bgpatom
         self.timestamp = timestamp
 
-        self.prefixes_weight = radix.Radix()
         self.peer_asn = None
 
-        self.pow_of_two = [2 ** i for i in range(33)[::-1]]
+        self.prefix_mode = prefix_mode
+        if prefix_mode:
+            pass
+        else:
+            self.prefixes_weight = radix.Radix()
+            self.pow_of_two = [2 ** i for i in range(33)[::-1]]
 
     def calculate_prefixes_weight(self):
         self.load_ipv4_prefixes()
@@ -63,8 +66,26 @@ class ViewPoint:
 
     def calculate_viewpoint_bcscore(self):
         logging.debug(f"start calculating bcscore ({self.peer_address})")
-        self.calculate_prefixes_weight()
         self.set_peer_asn()
+        if self.prefix_mode:
+            return self.__calculate_viewpoint_bcscore_for_prefix()
+        else:
+            return self.__calculate_viewpoint_bcscore_for_asn()
+
+    def __calculate_viewpoint_bcscore_for_prefix(self):
+        bcscore = defaultdict(lambda: defaultdict(int))
+
+        for aspath in self.bgpatom:
+            for prefix, origin_asn in self.bgpatom[aspath]:
+                self.set_asn_weight(origin_asn, 1, bcscore[prefix])
+                for asn in aspath:
+                    self.set_asn_weight(asn, 1, bcscore[prefix])
+
+        for prefix in bcscore:
+            yield self.format_dump_data(bcscore[prefix], prefix)
+
+    def __calculate_viewpoint_bcscore_for_asn(self):
+        self.calculate_prefixes_weight()
 
         bcscore = defaultdict(lambda: defaultdict(int))
         for aspath in self.bgpatom:
@@ -131,25 +152,21 @@ class ViewPoint:
         }
 
 
-def debug__test1(collector: str, timestamp: int):
-    collector_bgpatom = BGPAtomLoader(collector, timestamp).load_bgpatom()
-    sample_peer_address = list(collector_bgpatom.keys())[0]
-    return collector_bgpatom[sample_peer_address]
-
-
-def debug__test2():
-    peer_bgpatom = {
-        (1, 2, 3): [("8.8.8.0/24", 1), ("8.8.8.0/25", 2), ("8.8.8.128/25", 3)],
-        (2, 3, 4): [("8.8.0.0/16", 4), ("8.9.0.0/16", 5), ("8.8.0.0/17", 6)]
-    }
-    return peer_bgpatom
-
-
 if __name__ == "__main__":
     test_collector = "rrc10"
     atom_timestamp = utils.str_datetime_to_timestamp("2020-08-01T00:00:00")
 
-    sample_viewpoint = ViewPoint("1.1.1.1", debug__test1(test_collector, atom_timestamp))
-    sample_viewpoint_bcscore = sample_viewpoint.calculate_viewpoint_bcscore()
+    from hege.bgpatom.bgpatom_loader import BGPAtomLoader
+    test_bgpatom = BGPAtomLoader(test_collector, atom_timestamp).load_data()
+    for peer_address in test_bgpatom:
+        peer_atom = test_bgpatom[peer_address]
+
+    sample_viewpoint = ViewPoint("1.1.1.1", test_collector, peer_atom, atom_timestamp, True)
+    messages_count = 0
+    sample_viewpoint_bcscore = dict()
+    for data in sample_viewpoint.calculate_viewpoint_bcscore():
+        sample_viewpoint_bcscore[messages_count] = data
+        messages_count += 1
+
     with open("bc_score_sample.json", "w") as f:
         json.dump(sample_viewpoint_bcscore, f, indent=4)
