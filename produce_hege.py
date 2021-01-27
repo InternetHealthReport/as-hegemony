@@ -1,7 +1,6 @@
 import argparse
 import logging
 
-from hege.hegemony.hege_builder_mode import HegeBuilderMode
 from hege.hegemony.hege_builder import HegeBuilder
 from hege.utils.data_producer import DataProducer
 from hege.utils import utils
@@ -19,13 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("--prefix", "-p",
                         help="With this flag, the script will run in prefix hege mode",
                         action='store_true')
-    parser.add_argument("--fast", "-f",
-                        help="With this flag, the script will run in prefix-fast hege mode"
-                             "if both -p and -f flag are selected fast mode will be used",
-                        action='store_true')
-
     # Example: 2020-08-01T00:00:00
-
     args = parser.parse_args()
     assert args.start_time and args.end_time
 
@@ -33,18 +26,12 @@ if __name__ == "__main__":
     start_time_string = args.start_time
     end_time_string = args.end_time
 
-    FORMAT = '%(asctime)s %(processName)s %(message)s'
-
-    if args.fast:
-        builder_mode = HegeBuilderMode.PREFIX_FAST
-        log_filename_suffix = "fast-prefix"
-    elif args.prefix:
-        builder_mode = HegeBuilderMode.PREFIX
+    if args.prefix:
         log_filename_suffix = "prefix"
     else:
-        builder_mode = HegeBuilderMode.ASN
         log_filename_suffix = "asn"
 
+    FORMAT = '%(asctime)s %(processName)s %(message)s'
     logging.basicConfig(
         format=FORMAT, filename=f"/log/ihr-kafka-hegemony-{log_filename_suffix}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
@@ -53,6 +40,6 @@ if __name__ == "__main__":
     start_ts = utils.str_datetime_to_timestamp(start_time_string)
     end_ts = utils.str_datetime_to_timestamp(end_time_string)
 
-    hege_builder = HegeBuilder(selected_collectors, start_ts, end_ts, builder_mode)
+    hege_builder = HegeBuilder(selected_collectors, start_ts, end_ts, args.prefix)
     hege_data_producer = DataProducer(hege_builder)
     hege_data_producer.produce_kafka_messages_between()

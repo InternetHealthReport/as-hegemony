@@ -27,8 +27,9 @@ def get_hegemony_score_for_scope_at(selected_scope: str, timestamp: int):
         if message_timestamp != timestamp:
             return
         if message_scope == selected_scope:
-            print(f"found hegemony score for {selected_scope}")
-            return message["scope_hegemony"]
+            hegemony_score = message["scope_hegemony"]
+            print(f"found hegemony score for {selected_scope}, {hegemony_score}")
+            # return hegemony_score
 
 
 if __name__ == "__main__":
