@@ -89,7 +89,7 @@ def bgp_atom_builder(start_time: str, end_time: str, collectors: str):
     return template
 
 
-def bcscore_builder(start_time: str, end_time: str, collectors: str):
+def bcscore_builder(start_time: str, end_time: str, collectors: str, for_prefix=False):
     template = ""
     for collector in collectors:
         command = f"python3 " \
@@ -97,7 +97,11 @@ def bcscore_builder(start_time: str, end_time: str, collectors: str):
                   f"-c {collector} " \
                   f"-s {start_time} " \
                   f"-e {end_time}"
-        worker_name = f"bc-builder-{collector}"
+        if for_prefix:
+            worker_name = f"bc-builder-{collector}-prefix"
+            command += " -p"
+        else:
+            worker_name = f"bc-builder-{collector}-asn"
         depended = ["zookeeper", "kafka"]
         template += build_template(worker_name, command, depended)
     return template
@@ -112,9 +116,9 @@ def hege_builder(start_time: str, end_time: str, collectors: str, for_prefix=Fal
               f"-e {end_time}"
     if for_prefix:
         command += " -p"
-        worker_name = f"as-hege-builder"
-    else:
         worker_name = f"prefix-hege-builder"
+    else:
+        worker_name = f"asn-hege-builder"
     depended = ["zookeeper", "kafka"]
     return build_template(worker_name, command, depended)
 
@@ -148,6 +152,7 @@ if __name__ == "__main__":
     docker_compose_file += bgp_atom_builder(start, end, collectors_list)
 
     docker_compose_file += bcscore_builder(start, end, collectors_list)
+    docker_compose_file += bcscore_builder(start, end, collectors_list, True)
 
     docker_compose_file += hege_builder(start, end, collectors_list)
     docker_compose_file += hege_builder(start, end, collectors_list, True)
