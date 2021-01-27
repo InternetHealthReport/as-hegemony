@@ -23,8 +23,10 @@
   },
   "bcscore": {
     "dump_interval": 900,
-    "meta_data_topic": "ihr_bcscore_meta",
-    "data_topic": "ihr_bcscore"
+    "meta_data_topic__as": "ihr_bcscore_meta",
+    "data_topic__as": "ihr_bcscore",
+    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta",
+    "data_topic__prefix": "ihr_bcscore_prefix"
   },
   "hege": {
     "dump_interval": 900,
