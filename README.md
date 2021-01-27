@@ -21,13 +21,17 @@ python3 produce_bgpatom.py -c route-views.linx -s 2020-08-01T00:00:00 -e 2020-08
 ```
 
 ###  `produce_bscore`
-- running script
+- running script for producing **AS** hegemony score
 ```commandline
 python3 produce_bcscore.py -c rrc00 -s 2020-08-01T00:00:00 -e 2020-08-01T01:00:00
 python3 produce_bcscore.py -c rrc10 -s 2020-08-01T00:00:00 -e 2020-08-01T01:00:00
 python3 produce_bcscore.py -c route-views2 -s 2020-08-01T00:00:00 -e 2020-08-01T01:00:00
 python3 produce_bcscore.py -c route-views.linx -s 2020-08-01T00:00:00 -e 2020-08-01T01:00:00
 ```
+- running script for producing **Prefix** hegemony score
+```commandline
+python3 produce_bcscore.py -p -s 2020-08-01T00:00:00 -e 2020-08-01T00:15:00 -c rrc00
+ ```
 - produce AS's between-ness centrality score
 ```json
 {
