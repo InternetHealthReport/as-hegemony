@@ -1,6 +1,8 @@
 FROM caida/bgpstream:latest
 
-COPY librdkafka-1.5.0.tar.gz /tmp/
+RUN apt-get update -y
+
+RUN curl -X GET https://codeload.github.com/edenhill/librdkafka/tar.gz/v1.5.0 -o /tmp/librdkafka-1.5.0.tar.gz
 
 RUN apt-get install python3-pip libpq-dev -y
 
@@ -19,4 +21,5 @@ RUN pip3 install --no-cache-dir \
     uvicorn \
     psycopg2 \
     py-radix \
-    msgpack
+    msgpack \
+    scipy
