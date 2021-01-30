@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+import logging
 
 from hege.utils import utils
 
@@ -13,6 +14,7 @@ FULL_FLEET_PREFIXES_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
 class BGPAtomPeer:
     def __init__(self, peer_address):
         self.peer_address = peer_address
+        self.peer_asn = None
         self.prefixes_count = 0
 
         self.path_id_to_aspath = dict()
@@ -20,6 +22,13 @@ class BGPAtomPeer:
 
         self.prefix_to_aspath = dict()
         self.prefix_to_origin_asn = dict()
+
+    def set_peer_asn(self, peer_asn: str):
+        if self.peer_asn is None:
+            self.peer_asn = peer_asn
+            return
+        if self.peer_asn != peer_asn:
+            logging.warning(f"peer_asn miss match, previous: {self.peer_asn}, current {peer_asn}")
 
     def get_path_id(self, atom_aspath: tuple):
         if atom_aspath not in self.aspath_to_path_id:
@@ -100,5 +109,6 @@ class BGPAtomPeer:
             "prefixes": prefixes_batch,
             "aspath": aspath,
             "peer_address": self.peer_address,
+            "peer_asn": self.peer_asn,
             "timestamp": timestamp
         }
