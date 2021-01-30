@@ -35,16 +35,15 @@ class BCSCORELoader(DataLoader):
         return kafka_data.create_consumer_and_set_offset(self.topic, self.timestamp)
 
     def read_message(self, message: dict, bcscore: dict):
-        peer_asn = message["peer_asn"]
-        peer_bcscore = message["bcscore"]
-        peer_address = message["peer_address"]
+        ases_bcscore = message["bcscore"]
         scope = message["scope"]
+        peer_asn = str(message["peer_asn"])
 
-        for asn in peer_bcscore:
-            value = (peer_asn, peer_bcscore[asn])
+        for asn in ases_bcscore:
+            value = (peer_asn, ases_bcscore[asn])
             bcscore[scope][asn].append(value)
 
-        self.messages_per_peer[peer_address] += 1
+        self.messages_per_peer[peer_asn] += 1
 
 
 if __name__ == "__main__":
@@ -56,8 +55,8 @@ if __name__ == "__main__":
 
     print(f"completed: bcscore loaded at {bcscore_time_string} for {test_collector}")
     print(f"number of asn: {len(loaded_bcscore)}")
-    for scope in loaded_bcscore:
-        print(f"scope: {scope}")
-        for depended_asn in loaded_bcscore[scope]:
-            print(f"depended_asn: {depended_asn} \t peer_count: {len(loaded_bcscore[scope][depended_asn])}")
+    for test_scope in loaded_bcscore:
+        print(f"scope: {test_scope}")
+        for depended_asn in loaded_bcscore[test_scope]:
+            print(f"depended_asn: {depended_asn} \t peer_count: {len(loaded_bcscore[test_scope][depended_asn])}")
         break

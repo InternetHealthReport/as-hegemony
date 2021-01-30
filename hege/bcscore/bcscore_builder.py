@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 import math
 
@@ -33,20 +34,50 @@ class BCScoreBuilder:
             bgpatom = self.load_bgpatom(current_timestamp)
             yield current_timestamp, self.get_viewpoint_bcscore_generator(bgpatom, current_timestamp)
 
-    def get_viewpoint_bcscore_generator(self, bgpatom: dict, atom_timestamp: int):
-        for peer_address in bgpatom:
-            peer_bgpatom = bgpatom[peer_address]
-            peer_bcscore_generator = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_address, atom_timestamp)
-            for bcscore_dump_data in peer_bcscore_generator:
-                yield bcscore_dump_data, peer_address
-
     def load_bgpatom(self, atom_timestamp):
         bgpatom = BGPAtomLoader(self.collector, atom_timestamp).load_data()
         return bgpatom
 
+    def get_viewpoint_bcscore_generator(self, bgpatom: dict, atom_timestamp: int):
+        peers_by_asn = defaultdict(list)
+        for peer_address, peer_asn in bgpatom:
+            peers_by_asn[peer_asn].append(peer_address)
+
+        for peer_asn in peers_by_asn:
+            peers_list = peers_by_asn[peer_asn]
+            for message in self.calculate_bcscore_per_asn(peers_list, peer_asn, bgpatom, atom_timestamp):
+                yield message, str(peer_asn)
+
+    def calculate_bcscore_per_asn(self, peers_in_asn_list: list, peer_asn: str, bgpatom: dict, atom_timestamp: int):
+        sum_bcscore = defaultdict(lambda: defaultdict(int))
+        peers_count = defaultdict(lambda: defaultdict(int))
+
+        for peer_address in peers_in_asn_list:
+            peer_bgpatom = bgpatom[(peer_address, peer_asn)]
+            peer_bcscore_generator = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_address, atom_timestamp)
+            for scope_bcscore, scope in peer_bcscore_generator:
+                for depended_asn, depended_asn_bcscore in scope_bcscore.items():
+                    sum_bcscore[scope][depended_asn] += depended_asn_bcscore
+                    peers_count[scope][depended_asn] += 1
+
+        for scope in sum_bcscore:
+            bcscore_by_asn = dict()
+            for depended_asn in sum_bcscore[scope]:
+                bcscore_by_asn[depended_asn] = sum_bcscore[scope][depended_asn] / peers_count[scope][depended_asn]
+            yield self.format_dump_data(bcscore_by_asn, scope, peer_asn, atom_timestamp)
+
     def calculate_viewpoint_bcscore(self, bgpatom: dict, peer_address: str, atom_timestamp: int):
         viewpoint = ViewPoint(peer_address, self.collector, bgpatom, atom_timestamp, self.prefix_mode)
         return viewpoint.calculate_viewpoint_bcscore()
+
+    @staticmethod
+    def format_dump_data(bcscore_by_asn: dict, scope: str, peer_asn: str, dump_timestamp: int):
+        return {
+            "bcscore": bcscore_by_asn,
+            "scope": scope,
+            "peer_asn": peer_asn,
+            "timestamp": dump_timestamp
+        }
 
 
 if __name__ == "__main__":
@@ -61,7 +92,7 @@ if __name__ == "__main__":
     bcscore_builder = BCScoreBuilder(test_collector, start_at, end_at)
     for timestamp, viewpoint_bcscore_generator in bcscore_builder.consume_and_calculate():
         print(timestamp)
-        for bcscore, peer in viewpoint_bcscore_generator:
-            print(peer, bcscore)
+        for bcscore, asn in viewpoint_bcscore_generator:
+            print(asn, bcscore)
             break
         break
