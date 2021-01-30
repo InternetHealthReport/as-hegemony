@@ -147,3 +147,11 @@ if __name__ == "__main__":
 
     elif command == "delete-hege-prefix":
         delete_topic(["ihr_prefix_hegemony", "ihr_prefix_hegemony_meta"])
+
+    elif command == "clean":
+        for c in debug_collectors:
+            delete_topic([f"ihr_bgp_atom_{c}", f"ihr_bgp_atom_meta_{c}"])
+            delete_topic([f"ihr_bcscore_{c}", f"ihr_bcscore_meta_{c}"])
+            delete_topic([f"ihr_bcscore_prefix_{c}", f"ihr_bcscore_prefix_meta_{c}"])
+        delete_topic(["ihr_hegemony", "ihr_hegemony_meta"])
+        delete_topic(["ihr_prefix_hegemony", "ihr_prefix_hegemony_meta"])
