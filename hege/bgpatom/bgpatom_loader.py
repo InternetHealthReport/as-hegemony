@@ -28,10 +28,11 @@ class BGPAtomLoader(DataLoader):
 
     def read_message(self, message: dict, collector_bgpatom: dict):
         peer_address = message["peer_address"]
+        peer_asn = message["peer_asn"]
         as_path = tuple(message["aspath"])
         prefixes = message["prefixes"]
 
-        peer_bgpatom = collector_bgpatom[peer_address]
+        peer_bgpatom = collector_bgpatom[(peer_address, peer_asn)]
         peer_bgpatom[as_path] += prefixes
 
         self.messages_per_peer[peer_address] += 1
