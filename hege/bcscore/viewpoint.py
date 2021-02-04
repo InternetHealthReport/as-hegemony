@@ -56,17 +56,8 @@ class ViewPoint:
                 if not utils.is_ip_v6(prefix):
                     self.prefixes_weight.add(prefix)
 
-    def set_peer_asn(self):
-        possible_peer_asn = list()
-        for aspath in self.bgpatom:
-            if len(aspath) == 0:
-                continue
-            possible_peer_asn.append(aspath[0])
-        self.peer_asn = Counter(possible_peer_asn).most_common()[0][0]
-
     def calculate_viewpoint_bcscore(self):
         logging.debug(f"start calculating bcscore ({self.peer_address})")
-        self.set_peer_asn()
         if self.prefix_mode:
             return self.__calculate_viewpoint_bcscore_for_prefix()
         else:
@@ -82,7 +73,7 @@ class ViewPoint:
                     self.set_asn_weight(asn, 1, bcscore[prefix])
 
         for prefix in bcscore:
-            yield self.format_dump_data(bcscore[prefix], prefix)
+            yield bcscore[prefix], prefix
 
     def __calculate_viewpoint_bcscore_for_asn(self):
         self.calculate_prefixes_weight()
@@ -100,7 +91,7 @@ class ViewPoint:
 
         normalized_bcscore = self.normalized_bcscore_value(bcscore)
         for origin_asn in normalized_bcscore:
-            yield self.format_dump_data(normalized_bcscore[origin_asn], origin_asn)
+            yield normalized_bcscore[origin_asn], origin_asn
 
     def calculate_accumulated_weight(self, aspath):
         weight_per_asn = defaultdict(int)
@@ -140,16 +131,6 @@ class ViewPoint:
             bcscore.pop(origin_asn)
 
         return bcscore
-
-    def format_dump_data(self, bcscore: dict, scope: str):
-        return {
-            "bcscore": bcscore,
-            "scope": scope,
-            "peer_address": self.peer_address,
-            "peer_asn": self.peer_asn,
-            "collector": self.collector,
-            "timestamp": self.timestamp
-        }
 
 
 if __name__ == "__main__":

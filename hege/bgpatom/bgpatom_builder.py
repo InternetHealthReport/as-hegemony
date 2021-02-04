@@ -40,7 +40,9 @@ class BGPAtomBuilder:
                 next_dumped_timestamp += DUMP_INTERVAL
 
             peer_address = element["peer_address"]
+            peer_asn = element["peer_asn"]
             bgpatom_peer = self.get_bgpatom_peer(peer_address)
+            bgpatom_peer.set_peer_asn(peer_asn)
             bgpatom_peer.update_prefix_status(element)
 
     def dump_bgpatom_messages(self, timestamp: int):

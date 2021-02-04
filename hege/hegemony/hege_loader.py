@@ -20,6 +20,8 @@ def __get_hege_consumer(start_timestamp: int, is_asn_query):
 def get_hegemony_score_for_scope_at(selected_scope: str, timestamp: int):
     is_asn_query = "as" in selected_scope or "AS" in selected_scope
     consumer = __get_hege_consumer(timestamp, is_asn_query)
+    if is_asn_query:
+        selected_scope = selected_scope[2:]
 
     for message, _ in kafka_data.consume_stream(consumer):
         message_timestamp = message["timestamp"]

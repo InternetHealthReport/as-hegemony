@@ -9,7 +9,7 @@ def build_template(name: str, command: str, depended: list):
 
 
 def mount_image():
-    return "    image: 'pora/bgpstream:latest'\n"
+    return "    image: 'pora/bgpstream:v2'\n"
 
 
 def mount_volume():
@@ -124,23 +124,20 @@ def hege_builder(start_time: str, end_time: str, collectors: str, for_prefix=Fal
 
 
 def debugger():
-    return """  debug:
-    image: 'pora/bgpstream:latest'
-    volumes:
-      - '/mnt/data-raid/pora-cache/log:/log'
-      - '/mnt/data-raid/pora-cache/cache:/cache'
-      - '/home/elab/.pora/prefixes-ashege:/app'
-    working_dir: '/app'
-    command: /bin/bash
-    tty: true
-    depends_on:
-      - zookeeper
-      - kafka\n"""
+    depended = ["zookeeper", "kafka"]
+    return "  debug:\n" \
+           f"{mount_image()}" \
+           f"{mount_volume()}" \
+           f"{mount_working_dir()}" \
+           f"    command: /bin/bash\n" \
+           f"    tty: true\n" \
+           f"{mount_depends_on(depended)}" \
+           f"\n"
 
 
 if __name__ == "__main__":
     start = "2020-08-01T00:00:00"
-    end = "2020-08-01T00:16:00"
+    end = "2020-08-01T00:01:00"
     docker_compose_file = ""
     collectors_list = ["rrc00", "rrc10", "route-views2", "route-views.linx"]
     docker_compose_file += file_header()
