@@ -20,7 +20,7 @@ class DataLoader:
                 break
             self.read_message(message, loading_data)
 
-        self.cross_check_with_meta_data()
+        # self.cross_check_with_meta_data()
         return loading_data
 
     def prepare_load_data(self):
