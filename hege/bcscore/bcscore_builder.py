@@ -45,8 +45,8 @@ class BCScoreBuilder:
 
         for peer_asn in peers_by_asn:
             peers_list = peers_by_asn[peer_asn]
-            for message in self.calculate_bcscore_per_asn(peers_list, peer_asn, bgpatom, atom_timestamp):
-                yield message, str(peer_asn)
+            for message, scope in self.calculate_bcscore_per_asn(peers_list, peer_asn, bgpatom, atom_timestamp):
+                yield message, scope
 
     def calculate_bcscore_per_asn(self, peers_in_asn_list: list, peer_asn: str, bgpatom: dict, atom_timestamp: int):
         sum_bcscore = defaultdict(lambda: defaultdict(int))
@@ -64,7 +64,7 @@ class BCScoreBuilder:
             bcscore_by_asn = dict()
             for depended_asn in sum_bcscore[scope]:
                 bcscore_by_asn[depended_asn] = sum_bcscore[scope][depended_asn] / peers_count[scope][depended_asn]
-            yield self.format_dump_data(bcscore_by_asn, scope, peer_asn, atom_timestamp)
+            yield self.format_dump_data(bcscore_by_asn, scope, peer_asn, atom_timestamp), scope
 
     def calculate_viewpoint_bcscore(self, bgpatom: dict, peer_address: str, atom_timestamp: int):
         viewpoint = ViewPoint(peer_address, self.collector, bgpatom, atom_timestamp, self.prefix_mode)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     bcscore_builder = BCScoreBuilder(test_collector, start_at, end_at)
     for timestamp, viewpoint_bcscore_generator in bcscore_builder.consume_and_calculate():
         print(timestamp)
-        for bcscore, asn in viewpoint_bcscore_generator:
-            print(asn, bcscore)
+        for bcscore, test_scope in viewpoint_bcscore_generator:
+            print(test_scope, bcscore)
             break
         break
