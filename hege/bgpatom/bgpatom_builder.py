@@ -4,8 +4,13 @@ from hege.bgpatom.bgpatom_peer import BGPAtomPeer
 from hege.bgpatom.bgp_data import consume_ribs_and_update_message_upto
 from hege.utils import utils
 
-with open("/app/config.json", "r") as f:
-    config = json.load(f)
+try:
+    with open("/app/config.json", "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    with open("./config.json", "r") as f:
+        config = json.load(f)
+
 DUMP_INTERVAL = config["bgpatom"]["dump_interval"]
 BGPATOM_DATA_TOPIC = config["bgpatom"]["data_topic"]
 BGPATOM_META_DATA_TOPIC = config["bgpatom"]["meta_data_topic"]

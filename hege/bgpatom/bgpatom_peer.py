@@ -4,11 +4,16 @@ import logging
 
 from hege.utils import utils
 
-with open("/app/config.json", "r") as f:
-    config = json.load(f)
+try:
+    with open("/app/config.json", "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    with open("./config.json", "r") as f:
+        config = json.load(f)
+
 WITHDRAWN_PATH_ID = -1
 PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]
-FULL_FLEET_PREFIXES_THRESHOLD = config["bgpatom"]["full_fleet_threshold"]
+FULL_FEED_PREFIXES_THRESHOLD = config["bgpatom"]["full_feed_threshold"]
 
 
 class BGPAtomPeer:
@@ -69,8 +74,8 @@ class BGPAtomPeer:
     def update_withdrawal_message(self, prefix):
         self.prefix_to_aspath[prefix] = WITHDRAWN_PATH_ID
 
-    def is_full_fleet(self):
-        return self.prefixes_count > FULL_FLEET_PREFIXES_THRESHOLD
+    def is_full_feed(self):
+        return self.prefixes_count > FULL_FEED_PREFIXES_THRESHOLD
 
     def dump_bgpatom(self, timestamp: int):
         bgpatom = self.construct_bgpatom()
@@ -99,7 +104,7 @@ class BGPAtomPeer:
             origin_asn = self.prefix_to_origin_asn[prefix]
             bgpatom[path_id].append((prefix, origin_asn))
 
-        if not self.is_full_fleet():
+        if not self.is_full_feed():
             return dict()
         return bgpatom
 

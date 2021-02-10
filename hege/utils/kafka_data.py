@@ -9,8 +9,13 @@ from confluent_kafka.admin import AdminClient
 from confluent_kafka.cimpl import NewTopic, Producer, KafkaException
 
 
-with open("/app/config.json", "r") as f:
-    config = json.load(f)
+try: 
+    with open("/app/config.json", "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    with open("./config.json", "r") as f:
+        config = json.load(f)
+
 KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
 NO_NEW_MESSAGE_LIMIT = config["kafka"]["no_new_message_limit"]
 LEADER_WAIT_MINUTES = config["kafka"]["leader_wait_minutes"]

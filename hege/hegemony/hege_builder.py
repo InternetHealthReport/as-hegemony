@@ -3,8 +3,13 @@ import json
 from hege.hegemony.hege_builder_helper import HegeBuilderHelper
 from hege.utils import utils
 
-with open("/app/config.json", "r") as f:
-    config = json.load(f)
+try:
+    with open("/app/config.json", "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    with open("./config.json", "r") as f:
+        config = json.load(f)
+
 AS_HEGE_DATA_TOPIC = config["hege"]["data_topic__as"]
 AS_HEGE_META_DATA_TOPIC = config["hege"]["meta_data_topic__as"]
 PREFIX_HEGE_DATA_TOPIC = config["hege"]["data_topic__prefix"]

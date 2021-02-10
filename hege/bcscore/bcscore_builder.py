@@ -6,8 +6,13 @@ from hege.bgpatom.bgpatom_loader import BGPAtomLoader
 from hege.bcscore.viewpoint import ViewPoint
 from hege.utils import utils
 
-with open("/app/config.json", "r") as f:
-    config = json.load(f)
+try:
+    with open("/app/config.json", "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    with open("./config.json", "r") as f:
+        config = json.load(f)
+
 DUMP_INTERVAL = config["bcscore"]["dump_interval"]
 AS_BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic__as"]
 AS_BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic__as"]

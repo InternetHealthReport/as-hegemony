@@ -4,8 +4,13 @@ import argparse
 
 from hege.utils import kafka_data, utils
 
-with open("/app/config.json", "r") as f:
-    config = json.load(f)
+try:
+    with open("/app/config.json", "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    with open("./config.json", "r") as f:
+        config = json.load(f)
+
 AS_HEGE_TOPIC = config["hege"]["data_topic__as"]
 PREFIX_HEGE_TOPIC = config["hege"]["data_topic__prefix"]
 

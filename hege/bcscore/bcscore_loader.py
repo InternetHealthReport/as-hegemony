@@ -5,8 +5,14 @@ import json
 from hege.utils import kafka_data, utils
 from hege.utils.data_loader import DataLoader
 
-with open("/app/config.json", "r") as f:
-    config = json.load(f)["bcscore"]
+try:
+    with open("/app/config.json", "r") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    with open("./config.json", "r") as f:
+        config = json.load(f)
+
+config = config["bscore"]
 AS_BCSCORE_DATA_TOPIC = config["data_topic__as"]
 AS_BCSCORE_META_DATA_TOPIC = config["meta_data_topic__as"]
 PREFIX_BCSCORE_DATA_TOPIC = config["data_topic__prefix"]
