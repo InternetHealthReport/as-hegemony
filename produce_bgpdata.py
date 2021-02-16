@@ -1,4 +1,5 @@
 import sys
+import os
 import argparse
 from confluent_kafka import Producer
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -163,8 +164,11 @@ is given then it download data for the current hour."
             timeEnd = currentTime
 
     FORMAT = '%(asctime)s %(processName)s %(message)s'
+    logDir = '/log/'
+    if not os.path.exists(logDir):
+        logDir = './'
     logging.basicConfig(
-        format=FORMAT, filename='/log/ihr-kafka-bgpstream2_{}.log'.format(collector),
+        format=FORMAT, filename='{logDir}/ihr-kafka-bgpstream2_{}.log'.format(collector),
         level=logging.WARN, datefmt='%Y-%m-%d %H:%M:%S'
     )
     logging.warning("Started: %s" % sys.argv)

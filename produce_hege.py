@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 
 from hege.hegemony.hege_builder import HegeBuilder
 from hege.utils.data_producer import DataProducer
@@ -32,8 +33,11 @@ if __name__ == "__main__":
         log_filename_suffix = "asn"
 
     FORMAT = '%(asctime)s %(processName)s %(message)s'
+    logDir = '/log/'
+    if not os.path.exists(logDir):
+        logDir = './'
     logging.basicConfig(
-        format=FORMAT, filename=f"/log/ihr-kafka-hegemony-{log_filename_suffix}.log",
+        format=FORMAT, filename=f"{logDir}/ihr-kafka-hegemony-{log_filename_suffix}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
     )
 

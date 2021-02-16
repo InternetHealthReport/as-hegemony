@@ -29,7 +29,7 @@
     "data_topic__prefix": "ihr_bcscore_prefix"
   },
   "hege": {
-    "dump_interval": 900,
+    "dump_interval": 0,
     "data_topic__as": "ihr_hegemony",
     "meta_data_topic__as": "ihr_hegemony_meta",
     "data_topic__prefix": "ihr_prefix_hegemony",

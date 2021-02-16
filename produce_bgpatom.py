@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 
 from hege.bgpatom.bgpatom_builder import BGPAtomBuilder
 from hege.utils.data_producer import DataProducer
@@ -24,8 +25,11 @@ if __name__ == "__main__":
     end_time_string = args.end_time
 
     FORMAT = '%(asctime)s %(processName)s %(message)s'
+    logDir = '/log/'
+    if not os.path.exists(logDir):
+        logDir = './'
     logging.basicConfig(
-        format=FORMAT, filename=f"/log/ihr-kafka-bgpatom_{selected_collector}.log",
+        format=FORMAT, filename=f"{logDir}/ihr-kafka-bgpatom_{selected_collector}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
     )
 
