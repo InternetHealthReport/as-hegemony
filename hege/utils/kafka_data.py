@@ -34,15 +34,16 @@ def create_consumer_and_set_offset(topic: str, timestamp: int):
                 'enable.auto.commit': False,
                 'auto.offset.reset': 'earliest'
             })
+            # consumer.subscribe([topic])
 
             timestamp_ms = timestamp * 1000
-            time_offset = consumer.offsets_for_times(
-                [TopicPartition(
-                    topic,
-                    partition=0,
-                    offset=timestamp_ms
-                )], timeout=1)
+            topic_info = consumer.list_topics(topic)
+            partitions = [TopicPartition(topic, partition_id, timestamp_ms) 
+                        for partition_id in  topic_info.topics[topic].partitions.keys()]
+            time_offset = consumer.offsets_for_times( partitions )
 
+            # FIXME need to check the value for each partition? and ignore
+            # collectors that have timed out?
             if time_offset == -1:
                 consumer.close()
                 wait_for_leader_count += 1
@@ -50,6 +51,13 @@ def create_consumer_and_set_offset(topic: str, timestamp: int):
                 continue
 
             consumer.assign(time_offset)
+            # make sure the consumer is ready to fetch
+            # consumer.poll()
+            # set offsets
+            # for offset in time_offset:
+                # consumer.seek(offset)
+
+            #consumer.assign(time_offset)
             logging.info(f"successfully assign consumer to {topic}, time offset at {timestamp}")
             return consumer
 

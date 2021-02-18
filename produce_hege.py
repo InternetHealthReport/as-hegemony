@@ -37,7 +37,7 @@ if __name__ == "__main__":
     if not os.path.exists(logDir):
         logDir = './'
     logging.basicConfig(
-        format=FORMAT, filename=f"{logDir}/ihr-kafka-hegemony-{log_filename_suffix}.log",
+        format=FORMAT, filename=f"{logDir}/ihr-kafka-hegemony-{start_time_string}-{log_filename_suffix}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
     )
 

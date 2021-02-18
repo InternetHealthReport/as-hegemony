@@ -1,6 +1,7 @@
 from collections import defaultdict
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from scipy import stats
 
@@ -18,9 +19,14 @@ class HegeBuilderHelper:
         self.hegemony_score = defaultdict(dict)
 
     def build_hegemony_score(self):
-        for collector in self.collectors:
-            self.read_data_for_as_hegemony(collector)
+        # Use multiple threads to fetch data concurently
+        pool = ThreadPoolExecutor()
+        pool.map(self.read_data_for_as_hegemony, self.collectors)
+        pool.shutdown()
+        #for collector in self.collectors:
+        #    self.read_data_for_as_hegemony(collector)
         self.calculate_hegemony()
+
 
     def read_data_for_as_hegemony(self, collector: str):
         loaded_bcscore = self.load_bcscore(collector)
