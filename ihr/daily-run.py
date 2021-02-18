@@ -11,7 +11,7 @@ from kafka import KafkaConsumer
 from kafka.structs import TopicPartition
 
 
-slow_start = 900 # timer to start bcscore (wait for bgpatom to complete)
+slow_start = 300 # timer to start bcscore (wait for bgpatom to complete)
 
 BOOTSTRAP_SERVER = 'kafka1:9092'
 DATE_FMT = '%Y-%m-%dT00:00:00'
@@ -92,11 +92,12 @@ for collector in selected_collectors:
     print('# Betweenness Centrality', collector, start_str, end_str)
     Popen(['python3', 'produce_bcscore.py', '-c', collector, '-s', start_str, '-e', end_str])
 
+time.sleep(slow_start)
 
 # Produce AS Hegemony scores 
 print('# AS Hegemony')
 # print('python3 produce_hege.py -c %s -s %s -e %s' % 
     # (' '.join(collectors), start_str, end_str) )
-os.system('python3 produce_hege.py -s %s -e %s -c %s' % 
-    (start_str, end_str, ','.join(selected_collectors)) )
+for i in range(4):
+    Popen(['python3', 'produce_hege.py', '-s', start_str, '-e', end_str, '-c', ','.join(selected_collectors) ]) 
 
