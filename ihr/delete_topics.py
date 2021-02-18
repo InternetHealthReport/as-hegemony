@@ -22,6 +22,7 @@ def delete_topics(a, topics):
 
 if __name__ == '__main__':
     admin = AdminClient({'bootstrap.servers': 'kafka3'})
+    suffix = '_0216'
     topics = []
     collectors = [
         'route-views.sydney', 'route-views.chicago',
@@ -34,15 +35,15 @@ if __name__ == '__main__':
         ]
 
     prefix = [
-            'ihr_bgp_atom_', 'ihr_bgp_atom_meta_',
-            'ihr_bcscore_', 'ihr_bcscore_meta_',
+            f'ihr_bgp_atom{suffix}_', f'ihr_bgp_atom_meta{suffix}_',
+            f'ihr_bcscore{suffix}_', f'ihr_bcscore_meta{suffix}_',
             ]
 
     for p in prefix:
         for c in collectors:
             topics.append(p+c)
 
-    topics.append('ihr_hegemony')
-    topics.append('ihr_hegemony_meta')
+    topics.append(f'ihr_hegemony{suffix}')
+    topics.append(f'ihr_hegemony_meta{suffix}')
 
     delete_topics(admin, topics)

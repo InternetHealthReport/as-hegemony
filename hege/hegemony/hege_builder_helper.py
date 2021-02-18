@@ -82,7 +82,7 @@ if __name__ == "__main__":
     bcscore_timestamp = str_datetime_to_timestamp(bcscore_time_string)
 
     test_collectors = ["rrc00", "rrc10", "route-views.linx", "route-views2"]
-    hege_builder = HegeBuilderHelper(test_collectors, bcscore_timestamp)v
+    hege_builder = HegeBuilderHelper(test_collectors, bcscore_timestamp)
     hege_builder.build_hegemony_score()
 
     with open("/app/test-as-hegemony-builder-result.json", "w") as f:
