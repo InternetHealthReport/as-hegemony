@@ -1,4 +1,5 @@
 from confluent_kafka.admin import AdminClient
+import sys
 
 def delete_topics(a, topics):
     """ delete topics """
@@ -21,8 +22,8 @@ def delete_topics(a, topics):
 
 
 if __name__ == '__main__':
-    admin = AdminClient({'bootstrap.servers': 'kafka3'})
-    suffix = '_0216'
+    admin = AdminClient({'bootstrap.servers': 'kafka1:9092'})
+    suffix = sys.argv[1]
     topics = []
     collectors = [
         'route-views.sydney', 'route-views.chicago',

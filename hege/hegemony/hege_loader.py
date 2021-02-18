@@ -28,11 +28,11 @@ def get_hegemony_score_for_scope_at(selected_scope: str, timestamp: int):
     if is_asn_query:
         selected_scope = selected_scope[2:]
 
-    for message, _ in kafka_data.consume_stream(consumer):
-        message_timestamp = message["timestamp"]
+    for message, _ in kafka_data.consume_stream(consumer, timestamp):
+        # message_timestamp = message["timestamp"]
         message_scope = message["scope"]
-        if message_timestamp != timestamp:
-            return
+        # if message_timestamp != timestamp:
+            # return
         if message_scope == selected_scope:
             hegemony_score = message["scope_hegemony"]
             print(f"found hegemony score for {selected_scope}, {hegemony_score}")

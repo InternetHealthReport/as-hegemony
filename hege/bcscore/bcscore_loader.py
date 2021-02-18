@@ -21,10 +21,11 @@ PREFIX_BCSCORE_META_DATA_TOPIC = config["meta_data_topic__prefix"]
 
 
 class BCSCORELoader(DataLoader):
-    def __init__(self, collector: str, timestamp: int, prefix_mode=False):
+    def __init__(self, collector: str, timestamp: int, prefix_mode=False, partition_id=None):
         super().__init__(timestamp)
         self.collector = collector
         self.prefix_mode = prefix_mode
+        self.partition_id = partition_id
         if prefix_mode:
             self.topic = f"{PREFIX_BCSCORE_DATA_TOPIC}_{collector}"
             self.metadata_topic = f"{PREFIX_BCSCORE_META_DATA_TOPIC}_{collector}"
@@ -39,7 +40,7 @@ class BCSCORELoader(DataLoader):
         return defaultdict(lambda: defaultdict(list))
 
     def prepare_consumer(self):
-        return kafka_data.create_consumer_and_set_offset(self.topic, self.timestamp)
+        return kafka_data.create_consumer_and_set_offset(self.topic, self.timestamp, self.partition_id)
 
     def read_message(self, message: dict, bcscore: dict):
         ases_bcscore = message["bcscore"]

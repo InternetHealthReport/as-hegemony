@@ -18,11 +18,13 @@ INTERVAL = config["hege"]["dump_interval"]
 
 
 class HegeBuilder:
-    def __init__(self, collectors, start_timestamp: int, end_timestamp: int, prefix_mode=False):
+    def __init__(self, collectors, start_timestamp: int, end_timestamp: int, 
+            prefix_mode=False, partition_id=None):
         self.collectors = collectors
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
         self.prefix_mode = prefix_mode
+        self.partition_id = partition_id
 
         if prefix_mode:
             self.kafka_data_topic = PREFIX_HEGE_DATA_TOPIC
@@ -33,7 +35,7 @@ class HegeBuilder:
 
     def consume_and_calculate(self):
         for timestamp in range(self.start_timestamp, self.end_timestamp, INTERVAL):
-            hege_builder_helper = HegeBuilderHelper(self.collectors, timestamp, self.prefix_mode)
+            hege_builder_helper = HegeBuilderHelper(self.collectors, timestamp, self.prefix_mode, self.partition_id)
             hege_builder_helper.build_hegemony_score()
             yield timestamp, self.dump_as_hegemony_score(hege_builder_helper, timestamp)
 

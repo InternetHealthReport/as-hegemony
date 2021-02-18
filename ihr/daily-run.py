@@ -7,21 +7,23 @@ from subprocess import Popen
 import time
 import arrow
 import msgpack 
-from kafka import KafkaConsumer
-from kafka.structs import TopicPartition
+from confluent_kafka import Consumer, TopicPartition, KafkaError
 
 
-slow_start = 300 # timer to start bcscore (wait for bgpatom to complete)
+slow_start = 600 # lag for starting bcscore and hegemony code
 
+NB_PARTITION = 4 # this should be greater or equal to the number of partition set in config.json
 BOOTSTRAP_SERVER = 'kafka1:9092'
 DATE_FMT = '%Y-%m-%dT00:00:00'
 all_collectors = [
         'route-views.sydney', 'route-views.chicago',
         'route-views2', 'route-views.linx',
-        'route-views.jinx', 'route-views.linx',
+        'route-views.jinx', 
         'rrc00',
         'rrc04', 'rrc10', 'rrc11',
-        'rrc12', 'rrc13', 'rrc14',
+        'rrc12', 
+       # 'rrc13',  # FIXME 
+        'rrc14',
         'rrc15', 'rrc16', 'rrc19',
         'rrc20', 'rrc23', 'rrc24'
         ]
@@ -32,35 +34,43 @@ selected_collectors = []
 def select_collectors(start_time):
     selection = []
     start_threshold = start_time.shift(hours=-2)
+    end_threshold = start_time.shift(hours=2)
     for collector in all_collectors:
         topic = 'ihr_bgp_%s_ribs' % collector
 
         # Instantiate Kafka Consumer
-        consumer = KafkaConsumer(topic, bootstrap_servers=[BOOTSTRAP_SERVER],
-                group_id='ihr_rib_selection', enable_auto_commit=False, 
-                consumer_timeout_ms=10000,
-                value_deserializer=lambda v: msgpack.unpackb(v, raw=False))
-        partition = TopicPartition(topic, 0)
+        consumer = Consumer({
+            'bootstrap.servers': BOOTSTRAP_SERVER,
+            'group.id': 'ihr_rib_selection',
+            'enable.auto.commit': False,
+            })
+        partition = TopicPartition(topic, 0, start_threshold.timestamp*1000)
 
-        # go to end of the stream with dummy poll
-        consumer.poll()
-        consumer.seek_to_end()
-        offset = consumer.position(partition)-1
+        time_offset = consumer.offsets_for_times( [partition] )
+        # consumer.seek_to_end()
+        # offset = consumer.position(partition)-1
 
-        if offset<0: 
-            print(collector, ' empty topic!!')
+        if time_offset[0].offset == -1: 
+            print(collector, ' ignored! ')
+            consumer.close()
+            continue
         else:
-            consumer.seek(partition, offset)
+            consumer.assign(time_offset)
+            # consumer.seek(partition, offset)
 
         date = None
         # retrieve messages
-        for i, message in enumerate(consumer):
-            date = arrow.get(message.timestamp)
-            print(collector, ' ', date) 
-            break
+        kafka_msg = consumer.poll()
 
-        if date is not None and date > start_threshold:
+        if kafka_msg is not None and not kafka_msg.error():
+            ts = kafka_msg.timestamp()
+            date = arrow.get(ts[1])
+
+        if date is not None and date > start_threshold and date < end_threshold:
             selection.append(collector)
+            print(collector, ' ', date) 
+        else:
+            print(collector, ' ignored! ')
 
         consumer.close()
 
@@ -96,8 +106,15 @@ time.sleep(slow_start)
 
 # Produce AS Hegemony scores 
 print('# AS Hegemony')
-# print('python3 produce_hege.py -c %s -s %s -e %s' % 
-    # (' '.join(collectors), start_str, end_str) )
-for i in range(4):
-    Popen(['python3', 'produce_hege.py', '-s', start_str, '-e', end_str, '-c', ','.join(selected_collectors) ]) 
+print('python3 produce_hege.py -s %s -e %s -c %s ' % 
+    ( start_str, end_str, ' '.join(selected_collectors)) )
+#os.system('python3 produce_hege.py -s %s -e %s -c %s ' % 
+#     ( start_str, end_str, ','.join(selected_collectors)) )
+childs = []
+for i in range(NB_PARTITION):
+    childs.append(Popen(['python3', 'produce_hege.py', '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
+
+# Wait for completion
+for child in childs:
+    child.wait()
 

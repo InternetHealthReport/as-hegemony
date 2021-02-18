@@ -16,11 +16,11 @@ def consume_ribs_message_at(collector: str, rib_timestamp: int):
     bgp_data_topic = f"ihr_bgp_{collector}_ribs"
     consumer = create_consumer_and_set_offset(bgp_data_topic, rib_timestamp)
 
-    for bgp_msg, _ in consume_stream(consumer):
-        dump_timestamp = bgp_msg["rec"]["time"]
+    for bgp_msg, _ in consume_stream(consumer, rib_timestamp+RIB_BUFFER_INTERVAL):
+        # dump_timestamp = bgp_msg["rec"]["time"]
 
-        if dump_timestamp - rib_timestamp > RIB_BUFFER_INTERVAL:
-            return dict()
+#        if dump_timestamp - rib_timestamp > RIB_BUFFER_INTERVAL:
+#            return dict()
 
         for element in bgp_msg["elements"]:
             element_type = element["type"]
@@ -28,23 +28,25 @@ def consume_ribs_message_at(collector: str, rib_timestamp: int):
             assert element_type == "R", "consumer yield none RIBS message"
             yield element
 
+    return dict()
 
 def consume_updates_message_upto(collector: str, start_timestamp: int, end_timestamp: int):
     bgp_data_topic = f"ihr_bgp_{collector}_updates"
     consumer = create_consumer_and_set_offset(bgp_data_topic, start_timestamp)
 
     # data published at end_timestamp will not be consumed
-    for bgp_msg, _ in consume_stream(consumer):
-        dump_timestamp = bgp_msg["rec"]["time"]
+    for bgp_msg, _ in consume_stream(consumer, end_timestamp-1):
+        # dump_timestamp = bgp_msg["rec"]["time"]
 
-        if dump_timestamp >= end_timestamp:
-            return dict()
+        # if dump_timestamp >= end_timestamp:
+            # return dict()
 
         for element in bgp_msg["elements"]:
             element_type = element["type"]
             if element_type == "A" or element_type == "W":
                 yield element
 
+    return dict()
 
 def consume_ribs_and_update_message_upto(collector: str, start_timestamp: int, end_timestamp: int):
     for element in consume_ribs_message_at(collector, start_timestamp):

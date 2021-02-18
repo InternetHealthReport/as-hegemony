@@ -14,10 +14,10 @@ class DataLoader:
         loading_data = self.prepare_load_data()
         consumer = self.prepare_consumer()
 
-        for message, _ in kafka_data.consume_stream(consumer):
-            message_timestamp = message["timestamp"]
-            if message_timestamp != self.timestamp:
-                break
+        for message, _ in kafka_data.consume_stream(consumer, self.timestamp):
+            # message_timestamp = message["timestamp"]
+            # if message_timestamp != self.timestamp:
+                # break
             self.read_message(message, loading_data)
 
         # self.cross_check_with_meta_data()
@@ -36,10 +36,10 @@ class DataLoader:
         consumer = kafka_data.create_consumer_and_set_offset(self.metadata_topic, self.timestamp)
         messages_per_peer = defaultdict(int)
 
-        for message, _ in kafka_data.consume_stream(consumer):
-            message_timestamp = message["timestamp"]
-            if message_timestamp != self.timestamp:
-                break
+        for message, _ in kafka_data.consume_stream(consumer, self.timestamp):
+            # message_timestamp = message["timestamp"]
+            # if message_timestamp != self.timestamp:
+                # break
             meta = message["messages_per_peer"]
             for key in meta:
                 messages_per_peer[key] += meta[key]

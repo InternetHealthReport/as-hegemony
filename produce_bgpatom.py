@@ -29,7 +29,7 @@ if __name__ == "__main__":
     if not os.path.exists(logDir):
         logDir = './'
     logging.basicConfig(
-        format=FORMAT, filename=f"{logDir}/ihr-kafka-bgpatom_{selected_collector}.log",
+        format=FORMAT, filename=f"{logDir}/ihr-kafka-bgpatom_{start_time_string}-{selected_collector}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
     )
 

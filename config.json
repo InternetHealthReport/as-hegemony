@@ -1,8 +1,8 @@
 {
   "kafka": {
     "bootstrap_servers": "kafka1:9092",
-    "no_new_message_limit": 900,
-    "leader_wait_minutes": 15,
+    "no_new_message_limit": 300,
+    "leader_wait_minutes": 30,
     "default_topic_config": {
       "num_partitions": 4,
       "replication_factor": 2,
@@ -18,20 +18,20 @@
     "full_feed_threshold": 600000,
     "dump_interval": 900,
     "prefixes_in_atom_batch_size": 50,
-    "meta_data_topic": "ihr_bgp_atom_meta_0216",
-    "data_topic": "ihr_bgp_atom_0216"
+    "meta_data_topic": "ihr_bgp_atom_meta",
+    "data_topic": "ihr_bgp_atom"
   },
   "bcscore": {
     "dump_interval": 900,
-    "meta_data_topic__as": "ihr_bcscore_meta_0216",
-    "data_topic__as": "ihr_bcscore_0216",
+    "meta_data_topic__as": "ihr_bcscore_meta",
+    "data_topic__as": "ihr_bcscore",
     "meta_data_topic__prefix": "ihr_bcscore_prefix_meta",
     "data_topic__prefix": "ihr_bcscore_prefix"
   },
   "hege": {
     "dump_interval": 900,
-    "data_topic__as": "ihr_hegemony_0216",
-    "meta_data_topic__as": "ihr_hegemony_meta_0216",
+    "data_topic__as": "ihr_hegemony",
+    "meta_data_topic__as": "ihr_hegemony_meta",
     "data_topic__prefix": "ihr_prefix_hegemony",
     "meta_data_topic__prefix": "ihr_prefix_hegemony_meta"
   }

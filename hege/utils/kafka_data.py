@@ -4,6 +4,7 @@ import time
 import sys
 
 import msgpack
+import confluent_kafka
 from confluent_kafka import Consumer, TopicPartition, KafkaError
 from confluent_kafka.admin import AdminClient
 from confluent_kafka.cimpl import NewTopic, Producer, KafkaException
@@ -22,32 +23,42 @@ LEADER_WAIT_MINUTES = config["kafka"]["leader_wait_minutes"]
 DEFAULT_TOPIC_CONFIG = config["kafka"]["default_topic_config"]
 
 
-def create_consumer_and_set_offset(topic: str, timestamp: int):
+def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None):
     wait_for_leader_count = 0
-    while wait_for_leader_count < LEADER_WAIT_MINUTES:
+    while wait_for_leader_count < LEADER_WAIT_MINUTES/5:
         try:
             consumer = Consumer({
                 'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
-                'group.id': 'ashege_consumer',
+                'group.id': f'ashege_consumer_{timestamp}',
                 'session.timeout.ms': 600000,
                 'max.poll.interval.ms': 600000,
                 'enable.auto.commit': False,
                 'auto.offset.reset': 'earliest'
             })
-            # consumer.subscribe([topic])
+#            consumer.subscribe([topic])
 
             timestamp_ms = timestamp * 1000
-            topic_info = consumer.list_topics(topic)
-            partitions = [TopicPartition(topic, partition_id, timestamp_ms) 
+            partitions = []
+            if partition_id is None:
+                topic_info = consumer.list_topics(topic)
+                partitions = [TopicPartition(topic, partition_id, timestamp_ms) 
                         for partition_id in  topic_info.topics[topic].partitions.keys()]
+            else: 
+                partitions = [TopicPartition(topic, int(partition_id), timestamp_ms)]
+
             time_offset = consumer.offsets_for_times( partitions )
 
-            # FIXME need to check the value for each partition? and ignore
-            # collectors that have timed out?
-            if time_offset == -1:
+            ready = False
+
+            for partition in time_offset:
+                if partition.offset != -1:
+                    ready = True
+
+            if not ready:
                 consumer.close()
                 wait_for_leader_count += 1
-                time.sleep(60)
+                time.sleep(300)
+                logging.warning(f"waiting for new data: {time_offset}")
                 continue
 
             consumer.assign(time_offset)
@@ -76,23 +87,38 @@ def create_consumer_and_set_offset(topic: str, timestamp: int):
             raise e
 
 
-def consume_stream(consumer: Consumer):
-    number_of_empty_message = 0
+def consume_stream(consumer: Consumer, timebin: int):
+    # TODO: handle this earlier and ignore collector
+    if consumer is None:
+        logging.error(f"trying to get data from aborted consumer at {timebin}")
+        return 
+
+    partitions = consumer.assignment()
+    nb_partitions = len(partitions)
+    nb_stopped_partitions = 0
+    timebin_ms = timebin*1000
 
     while True:
-        kafka_msg = consumer.poll(1.0)
+        kafka_msg = consumer.poll(NO_NEW_MESSAGE_LIMIT)
 
         if kafka_msg is None:
-            number_of_empty_message += 1
-            if number_of_empty_message > NO_NEW_MESSAGE_LIMIT:
-                return
-            continue
+            logging.error(f"consumer timeout")
+            return
 
         if kafka_msg.error():
             logging.error(f"consumer error {kafka_msg.error()}")
             continue
+        # Filter with start and end times
+        ts = kafka_msg.timestamp()
 
-        number_of_empty_message = 0
+        if ts[0] == confluent_kafka.TIMESTAMP_CREATE_TIME and ts[1] > timebin_ms:
+            consumer.pause([TopicPartition(kafka_msg.topic(), kafka_msg.partition())])
+            nb_stopped_partitions += 1
+            if nb_stopped_partitions < nb_partitions:
+                continue
+            else:
+                return
+
         message = msgpack.unpackb(kafka_msg.value(), raw=False)
         yield message, kafka_msg
 
