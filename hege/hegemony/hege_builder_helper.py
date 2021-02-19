@@ -57,7 +57,10 @@ class HegeBuilderHelper:
         logging.info(f"total number of peer asn: {self.total_peer_asn_count}")
         # Some numpy function release the GIL
         with ThreadPoolExecutor() as tpool:
-            tpool.map(self.calculate_hegemony_helper, self.bc_score_list.items(), chunksize=1000)
+            res = tpool.map(self.calculate_hegemony_helper, self.bc_score_list.items(), chunksize=1000)
+            # Needed to log if an exception is raised
+            for r in res:
+                pass
             
         # for scope in self.bc_score_list:
             # self.calculate_hegemony_helper(scope)

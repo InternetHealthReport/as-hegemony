@@ -32,6 +32,7 @@ selected_collectors = []
 
 
 def select_collectors(start_time):
+    print('Selecting collectors with updated data...')
     selection = []
     start_threshold = start_time.shift(hours=-2)
     end_threshold = start_time.shift(hours=2)
@@ -41,7 +42,7 @@ def select_collectors(start_time):
         # Instantiate Kafka Consumer
         consumer = Consumer({
             'bootstrap.servers': BOOTSTRAP_SERVER,
-            'group.id': 'ihr_rib_selection',
+            'group.id': 'ihr_hegemony_rib_selection',
             'enable.auto.commit': False,
             })
         partition = TopicPartition(topic, 0, start_threshold.timestamp*1000)
@@ -76,9 +77,15 @@ def select_collectors(start_time):
 
     return selection
 
+
+if len(sys.argv) < 2:
+    sys.exit(f'usage: {sys.argv[0]} [all|atom|bcscore|hege] [start_time]')
+
+analysis_type = sys.argv[1]
+
 # Set start/end dates
-if len(sys.argv) > 1:
-    start_time = arrow.get(sys.argv[1])
+if len(sys.argv) > 2:
+    start_time = arrow.get(sys.argv[2])
 else:
     start_time = arrow.now().replace(hour=0, minute=0, second=0)
 end_time= start_time.shift(days=1)
@@ -89,30 +96,33 @@ end_str = end_time.strftime(DATE_FMT)
 
 # Find collectors that are up-to-date
 selected_collectors = select_collectors(start_time)
-
-# Produce BGP atoms for each collector
-for collector in selected_collectors: 
-    print('# BGP atoms', collector, start_str, end_str)
-    Popen(['python3', 'produce_bgpatom.py', '-c', collector, '-s', start_str, '-e', end_str])
-
-time.sleep(slow_start)
-
-# Produce BC scores for each collector
-for collector in selected_collectors: 
-    print('# Betweenness Centrality', collector, start_str, end_str)
-    Popen(['python3', 'produce_bcscore.py', '-c', collector, '-s', start_str, '-e', end_str])
-
-time.sleep(slow_start)
-
-# Produce AS Hegemony scores 
-print('# AS Hegemony')
-print('python3 produce_hege.py -s %s -e %s -c %s ' % 
-    ( start_str, end_str, ' '.join(selected_collectors)) )
-#os.system('python3 produce_hege.py -s %s -e %s -c %s ' % 
-#     ( start_str, end_str, ','.join(selected_collectors)) )
 childs = []
-for i in range(NB_PARTITION):
-    childs.append(Popen(['python3', 'produce_hege.py', '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
+
+if 'all' in analysis_type or 'atom' in analysis_type:
+    # Produce BGP atoms for each collector
+    for collector in selected_collectors: 
+        print('# BGP atoms', collector, start_str, end_str)
+        childs.append(Popen(['python3', 'produce_bgpatom.py', '-c', collector, '-s', start_str, '-e', end_str]))
+
+    time.sleep(slow_start)
+
+if 'all' in analysis_type or 'bcscore' in analysis_type:
+    # Produce BC scores for each collector
+    for collector in selected_collectors: 
+        print('# Betweenness Centrality', collector, start_str, end_str)
+        childs.append(Popen(['python3', 'produce_bcscore.py', '-c', collector, '-s', start_str, '-e', end_str]))
+
+    time.sleep(slow_start)
+
+if 'all' in analysis_type or 'hege' in analysis_type:
+    # Produce AS Hegemony scores 
+    print('# AS Hegemony')
+    print('python3 produce_hege.py -s %s -e %s -c %s ' % 
+        ( start_str, end_str, ' '.join(selected_collectors)) )
+    #os.system('python3 produce_hege.py -s %s -e %s -c %s ' % 
+    #     ( start_str, end_str, ','.join(selected_collectors)) )
+    for i in range(NB_PARTITION):
+        childs.append(Popen(['python3', 'produce_hege.py', '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
 
 # Wait for completion
 for child in childs:
