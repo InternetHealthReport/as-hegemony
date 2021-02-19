@@ -73,7 +73,7 @@ class HegeBuilderHelper:
         # else:
         #    total_asn_count = len(scope_bc_score_list[scope])
 
-        args = scope, scope_bc_score_list
+        scope, scope_bc_score_list = args
 
         for asn in scope_bc_score_list:
             peer_asn_count = len(scope_bc_score_list[asn])
