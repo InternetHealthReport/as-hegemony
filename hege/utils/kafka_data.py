@@ -32,6 +32,7 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
                 'group.id': f'ashege_consumer_{timestamp}',
                 'session.timeout.ms': 600000,
                 'max.poll.interval.ms': 600000,
+                'fetch.min.bytes': 100000,
                 'enable.auto.commit': False,
                 'auto.offset.reset': 'earliest'
             })
@@ -141,8 +142,14 @@ def prepare_producer():
     logging.debug("prepare producer")
     producer = Producer({
         'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
+        'queue.buffering.max.messages': 10000000,
+        'queue.buffering.max.kbytes': 2097151,
+        'linger.ms': 200,
+        'batch.num.messages': 1000000,
+        'message.max.bytes': 999000,
         'default.topic.config': {
-            'compression.codec': 'snappy'
+            'compression.codec': 'snappy',
+            'acks': 1,
         }
     })
     return producer
