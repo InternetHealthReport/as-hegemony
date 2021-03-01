@@ -25,7 +25,7 @@ DEFAULT_TOPIC_CONFIG = config["kafka"]["default_topic_config"]
 
 def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None):
     wait_for_leader_count = 0
-    while wait_for_leader_count < LEADER_WAIT_MINUTES/5:
+    while wait_for_leader_count < LEADER_WAIT_MINUTES:
         try:
             consumer = Consumer({
                 'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
@@ -58,7 +58,7 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
             if not ready:
                 consumer.close()
                 wait_for_leader_count += 1
-                time.sleep(300)
+                time.sleep(60)
                 logging.warning(f"waiting for new data: {time_offset}")
                 continue
 
@@ -89,12 +89,12 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
 
 
 def consume_stream(consumer: Consumer, timebin: int):
-    # TODO: handle this earlier and ignore collector
     if consumer is None:
         logging.error(f"trying to get data from aborted consumer at {timebin}")
         return 
 
-    partitions = consumer.assignment()
+    # Read non-empty partitions
+    partitions = [part for part in consumer.assignment() if part.offset>=0]
     nb_partitions = len(partitions)
     nb_stopped_partitions = 0
     timebin_ms = timebin*1000
@@ -148,7 +148,7 @@ def prepare_producer():
         'batch.num.messages': 1000000,
         'message.max.bytes': 999000,
         'default.topic.config': {
-            'compression.codec': 'snappy',
+            'compression.codec': 'lz4',
             'acks': 1,
         }
     })

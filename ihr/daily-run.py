@@ -93,6 +93,7 @@ end_time= start_time.shift(days=1)
 start_str = start_time.strftime(DATE_FMT)
 end_str = end_time.strftime(DATE_FMT)
 
+print('start: ', start_str, 'end: ', end_str)
 
 # Find collectors that are up-to-date
 selected_collectors = select_collectors(start_time)
