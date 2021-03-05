@@ -21,20 +21,33 @@ class HegeBuilderHelper:
         self.hegemony_score = defaultdict(dict)
 
     def build_hegemony_score(self):
+
+        to_remove = []
+
         # Use multiple thread to fetch data concurently
         with ThreadPoolExecutor() as tpool:
             res = tpool.map(self.read_data_for_as_hegemony, self.collectors)
-            # Needed to log if an exception is raised
-            for r in res:
-                pass
-        #for collector in self.collectors:
-        #    self.read_data_for_as_hegemony(collector)
+            # Check if everything went fine
+            for success, collector in res:
+                if not success:
+                    to_remove.append(collector)
+
+        # Ignore collectors that were aborted
+        for collector in to_remove:
+            logging.error(f"IGNORING {collector} for the rest of the analysis")
+            self.collectors.remove(collector)
+
         self.calculate_hegemony()
 
 
     def read_data_for_as_hegemony(self, collector: str):
         loaded_bcscore = self.load_bcscore(collector, self.partition_id)
 
+        if loaded_bcscore is None:
+            logging.debug(f"could not read collector {collector}'s bcscore;")
+            return False, collector 
+
+        logging.debug(f"successfully read collector {collector}'s bcscore; {len(loaded_bcscore)} scopes data loaded")
         logging.debug(f"start analyzing {collector}'s bcscore")
         for scope in loaded_bcscore:
             depended_ases_bcscore = loaded_bcscore[scope]
@@ -44,10 +57,11 @@ class HegeBuilderHelper:
                     self.bc_score_list[scope][depended_as].append(as_bcscore)
         logging.debug(f"complete analyzing {collector}'s bcscore")
 
+        return True, collector 
+
     def load_bcscore(self, collector: str, partition_id=None):
         logging.debug(f"read {collector}'s bcscore")
         loaded_bcscore = BCSCORELoader(collector, self.timestamp, self.prefix_mode, partition_id).load_data()
-        logging.debug(f"successfully read collector {collector}'s bcscore; {len(loaded_bcscore)} scopes data loaded")
         return loaded_bcscore
 
     def calculate_hegemony(self):
