@@ -24,7 +24,9 @@ all_collectors = [
         'rrc12', 
        # 'rrc13',  # FIXME 
         'rrc14',
-        'rrc15', 'rrc16', 'rrc19',
+        'rrc15', 
+       # 'rrc16',  # slow updates?
+        'rrc19',
         'rrc20', 'rrc23', 'rrc24'
         ]
 
@@ -45,7 +47,7 @@ def select_collectors(start_time):
             'group.id': 'ihr_hegemony_rib_selection',
             'enable.auto.commit': False,
             })
-        partition = TopicPartition(topic, 0, start_threshold.timestamp*1000)
+        partition = TopicPartition(topic, 0, int(start_threshold.timestamp())*1000)
 
         time_offset = consumer.offsets_for_times( [partition] )
         # consumer.seek_to_end()
