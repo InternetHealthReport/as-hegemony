@@ -89,6 +89,10 @@ class ViewPoint:
 
                 local_graph[origin_asn] += weight_per_asn[origin_asn]
 
+                # patch
+                if origin_asn != SCOPE_ASN:
+                    bcscore[SCOPE_ASN][origin_asn] += weight_per_asn[origin_asn]
+
         normalized_bcscore = self.normalized_bcscore_value(bcscore)
         for origin_asn in normalized_bcscore:
             yield normalized_bcscore[origin_asn], origin_asn
