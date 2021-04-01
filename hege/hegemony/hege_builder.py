@@ -42,13 +42,15 @@ class HegeBuilder:
     def dump_as_hegemony_score(self, hege_builder_helper, timestamp: int):
         hegemony_scope = hege_builder_helper.hegemony_score
         for scope in hegemony_scope:
-            yield self.format_message(hegemony_scope[scope], scope, timestamp), scope
+            for asn, hege in hegemony_scope[scope].items():
+                yield self.format_message(hege, asn, scope, timestamp), scope
 
     @staticmethod
-    def format_message(scope_hege: dict, scope: str, timestamp: int):
+    def format_message(hege: float, asn: str, scope: str, timestamp: int):
         return {
-            "scope_hegemony": scope_hege,
             "timestamp": timestamp,
+            "hege": hege,
+            "asn": asn,
             "scope": scope
         }
 
