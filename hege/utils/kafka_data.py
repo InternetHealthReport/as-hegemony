@@ -146,7 +146,6 @@ def prepare_producer():
         'queue.buffering.max.kbytes': 2097151,
         'linger.ms': 200,
         'batch.num.messages': 1000000,
-        'message.max.bytes': 999000,
         'default.topic.config': {
             'compression.codec': 'lz4',
             'acks': 1,

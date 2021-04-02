@@ -19,6 +19,8 @@ AS_BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic__as"]
 PREFIX_BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic__prefix"]
 PREFIX_BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic__prefix"]
 
+DATA_BATCH_SIZE = 10000
+
 
 class BCScoreBuilder:
     def __init__(self, collector: str, start_timestamp: int, end_timestamp: int, prefix_mode=False):
@@ -69,7 +71,12 @@ class BCScoreBuilder:
             bcscore_by_asn = dict()
             for depended_asn in sum_bcscore[scope]:
                 bcscore_by_asn[depended_asn] = sum_bcscore[scope][depended_asn] / peers_count[scope][depended_asn]
-            yield self.format_dump_data(bcscore_by_asn, scope, peer_asn, atom_timestamp), scope
+
+            # Limit the number of asn (message size)
+            bba_list = list(bcscore_by_asn.items())
+            idx = range(len(bba_list))
+            for bba_batch in idx[::DATA_BATCH_SIZE]:
+                yield self.format_dump_data(dict(bba_list[bba_batch:bba_batch+DATA_BATCH_SIZE]), scope, peer_asn, atom_timestamp), scope
 
     def calculate_viewpoint_bcscore(self, bgpatom: dict, peer_address: str, atom_timestamp: int):
         viewpoint = ViewPoint(peer_address, self.collector, bgpatom, atom_timestamp, self.prefix_mode)
