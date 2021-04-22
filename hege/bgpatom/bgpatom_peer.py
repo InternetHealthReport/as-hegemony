@@ -13,12 +13,17 @@ except FileNotFoundError:
 
 WITHDRAWN_PATH_ID = -1
 PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]
-FULL_FEED_PREFIXES_THRESHOLD = config["bgpatom"]["full_feed_threshold"]
+FULL_FEED_PREFIXES_THRESHOLD_v4 = config["bgpatom"]["full_feed_threshold_v4"]
+FULL_FEED_PREFIXES_THRESHOLD_v6 = config["bgpatom"]["full_feed_threshold_v6"]
 
 
 class BGPAtomPeer:
     def __init__(self, peer_address):
         self.peer_address = peer_address
+        # IPv4 or IPv6
+        self.address_family = 4
+        if ":" in peer_address:
+            self.address_family = 6
         self.peer_asn = None
         self.prefixes_count = 0
 
@@ -75,7 +80,10 @@ class BGPAtomPeer:
         self.prefix_to_aspath[prefix] = WITHDRAWN_PATH_ID
 
     def is_full_feed(self):
-        return self.prefixes_count > FULL_FEED_PREFIXES_THRESHOLD
+        if self.address_family == 4:
+            return self.prefixes_count > FULL_FEED_PREFIXES_THRESHOLD_v4
+        else:
+            return self.prefixes_count > FULL_FEED_PREFIXES_THRESHOLD_v6
 
     def dump_bgpatom(self, timestamp: int):
         bgpatom = self.construct_bgpatom()

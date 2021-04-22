@@ -16,11 +16,16 @@ def get_asn_set(asn: str):
 
 
 class ViewPoint:
-    def __init__(self, ip_address: str, collector: str, bgpatom: dict, timestamp: int, prefix_mode=False):
+    def __init__(self, ip_address: str, collector: str, bgpatom: dict, timestamp: int, 
+            prefix_mode=False):
         self.peer_address = ip_address
         self.collector = collector
         self.bgpatom = bgpatom
         self.timestamp = timestamp
+        if '.' in self.peer_address:
+            self.address_family = 4
+        else:
+            self.address_family = 6
 
         self.peer_asn = None
 
@@ -32,28 +37,44 @@ class ViewPoint:
             self.pow_of_two = [2 ** i for i in range(33)[::-1]]
 
     def calculate_prefixes_weight(self):
-        self.load_ipv4_prefixes()
-        node = self.prefixes_weight.add("0.0.0.0/0")
+        self.load_prefixes()
+        if self.address_family == 4:
+            node = self.prefixes_weight.add("0.0.0.0/0")
+        else:
+            node = self.prefixes_weight.add("::/0")
         self.calculate_prefixes_weight_helper(node)
 
     def calculate_prefixes_weight_helper(self, node):
         sub_prefixes_weight = 0
         prefix = node.prefix
 
-        for sub_node in self.prefixes_weight.search_covered(prefix):
-            if sub_node == node:
-                continue
-            if "weight" not in sub_node.data:
-                self.calculate_prefixes_weight_helper(sub_node)
-            sub_prefixes_weight += sub_node.data["weight"]
+        if self.address_family == 4:
+            for sub_node in self.prefixes_weight.search_covered(prefix):
+                if sub_node == node:
+                    continue
+                if "weight" not in sub_node.data:
+                    self.calculate_prefixes_weight_helper(sub_node)
+                sub_prefixes_weight += sub_node.data["weight"]
 
-        current_prefix_weight = self.pow_of_two[node.prefixlen] - sub_prefixes_weight
-        node.data["weight"] = current_prefix_weight
+            current_prefix_weight = self.pow_of_two[node.prefixlen] - sub_prefixes_weight
+            node.data["weight"] = current_prefix_weight
+        else:
+            # For IPv6 all paths have equal weight
+            for sub_node in self.prefixes_weight.search_covered(prefix):
+                if sub_node == node:
+                    continue
+                if "weight" not in sub_node.data:
+                    self.calculate_prefixes_weight_helper(sub_node)
 
-    def load_ipv4_prefixes(self):
+            node.data["weight"] = 1
+
+
+    def load_prefixes(self):
         for aspath in self.bgpatom:
             for prefix, _ in self.bgpatom[aspath]:
-                if not utils.is_ip_v6(prefix):
+                if self.address_family == 6 and  utils.is_ip_v6(prefix):
+                    self.prefixes_weight.add(prefix)
+                else: 
                     self.prefixes_weight.add(prefix)
 
     def calculate_viewpoint_bcscore(self):
@@ -100,11 +121,10 @@ class ViewPoint:
     def calculate_accumulated_weight(self, aspath):
         weight_per_asn = defaultdict(int)
         for prefix, origin_asn in self.bgpatom[aspath]:
-            if not utils.is_ip_v6(prefix):
-                node = self.prefixes_weight.search_exact(prefix)
-                node_weight = node.data["weight"]
-                weight_per_asn[SCOPE_ASN] += node_weight
-                self.set_asn_weight(origin_asn, node_weight, weight_per_asn)
+            node = self.prefixes_weight.search_exact(prefix)
+            node_weight = node.data["weight"]
+            weight_per_asn[SCOPE_ASN] += node_weight
+            self.set_asn_weight(origin_asn, node_weight, weight_per_asn)
 
         return weight_per_asn
 

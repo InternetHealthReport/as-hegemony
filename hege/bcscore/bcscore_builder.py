@@ -23,11 +23,13 @@ DATA_BATCH_SIZE = 10000
 
 
 class BCScoreBuilder:
-    def __init__(self, collector: str, start_timestamp: int, end_timestamp: int, prefix_mode=False):
+    def __init__(self, collector: str, start_timestamp: int, end_timestamp: int, 
+            prefix_mode=False, address_family=4):
         self.collector = collector
         self.start_timestamp = math.ceil(start_timestamp/DUMP_INTERVAL) * DUMP_INTERVAL
         self.end_timestamp = end_timestamp
         self.prefix_mode = prefix_mode
+        self.address_family = address_family
 
         if prefix_mode:
             self.kafka_data_topic = f"{PREFIX_BCSCORE_DATA_TOPIC}_{collector}"
@@ -60,6 +62,11 @@ class BCScoreBuilder:
         peers_count = defaultdict(lambda: defaultdict(int))
 
         for peer_address in peers_in_asn_list:
+            # Skip peers for wrong IP version
+            if( ('.' in peer_address and self.address_family == 6) 
+                    or (':' in peer_address and self.address_family == 4)): 
+                continue
+        
             peer_bgpatom = bgpatom[(peer_address, peer_asn)]
             peer_bcscore_generator = self.calculate_viewpoint_bcscore(peer_bgpatom, peer_address, atom_timestamp)
             for scope_bcscore, scope in peer_bcscore_generator:
