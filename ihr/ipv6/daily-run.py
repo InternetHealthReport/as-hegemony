@@ -105,7 +105,7 @@ if 'all' in analysis_type or 'atom' in analysis_type:
     # Produce BGP atoms for each collector
     for collector in selected_collectors: 
         print('# BGP atoms', collector, start_str, end_str)
-        #childs.append(Popen(['python3', 'produce_bgpatom.py', '-c', collector, '-s', start_str, '-e', end_str]))
+        #childs.append(Popen(['python3', '../produce_bgpatom.py', '-c', collector, '-s', start_str, '-e', end_str]))
         print('using BGP atoms from IPv4 script')
 
     time.sleep(slow_start)
@@ -114,7 +114,7 @@ if 'all' in analysis_type or 'bcscore' in analysis_type:
     # Produce BC scores for each collector
     for collector in selected_collectors: 
         print('# Betweenness Centrality', collector, start_str, end_str)
-        childs.append(Popen(['python3', 'produce_bcscore.py', '-c', collector, '-s', start_str, '-e', end_str, '--ip_version', 6]))
+        childs.append(Popen(['python3', '../../produce_bcscore.py', '-c', collector, '-s', start_str, '-e', end_str, '--ip_version', '6']))
 
     time.sleep(slow_start)
 
@@ -126,7 +126,7 @@ if 'all' in analysis_type or 'hege' in analysis_type:
     #os.system('python3 produce_hege.py -s %s -e %s -c %s ' % 
     #     ( start_str, end_str, ','.join(selected_collectors)) )
     for i in range(NB_PARTITION):
-        childs.append(Popen(['python3', 'produce_hege.py', '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
+        childs.append(Popen(['python3', '../../produce_hege.py', '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
 
 # Wait for completion
 for child in childs:
