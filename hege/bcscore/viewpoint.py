@@ -48,7 +48,7 @@ class ViewPoint:
         sub_prefixes_weight = 0
         prefix = node.prefix
 
-        if self.address_family == 4:
+        if self.address_family == 4 and '.' in prefix:
             for sub_node in self.prefixes_weight.search_covered(prefix):
                 if sub_node == node:
                     continue
@@ -58,7 +58,7 @@ class ViewPoint:
 
             current_prefix_weight = self.pow_of_two[node.prefixlen] - sub_prefixes_weight
             node.data["weight"] = current_prefix_weight
-        else:
+        elif self.address_family == 6 and ':' in prefix:
             # For IPv6 all paths have equal weight
             for sub_node in self.prefixes_weight.search_covered(prefix):
                 if sub_node == node:
@@ -74,7 +74,7 @@ class ViewPoint:
             for prefix, _ in self.bgpatom[aspath]:
                 if self.address_family == 6 and  utils.is_ip_v6(prefix):
                     self.prefixes_weight.add(prefix)
-                else: 
+                elif self.address_family == 4 and not utils.is_ip_v6(prefix): 
                     self.prefixes_weight.add(prefix)
 
     def calculate_viewpoint_bcscore(self):
@@ -121,10 +121,13 @@ class ViewPoint:
     def calculate_accumulated_weight(self, aspath):
         weight_per_asn = defaultdict(int)
         for prefix, origin_asn in self.bgpatom[aspath]:
-            node = self.prefixes_weight.search_exact(prefix)
-            node_weight = node.data["weight"]
-            weight_per_asn[SCOPE_ASN] += node_weight
-            self.set_asn_weight(origin_asn, node_weight, weight_per_asn)
+            if (    ( self.address_family == 4 and '.' in prefix ) or
+                    ( self.address_family == 6 and ':' in prefix ) ):
+                    
+                node = self.prefixes_weight.search_exact(prefix)
+                node_weight = node.data["weight"]
+                weight_per_asn[SCOPE_ASN] += node_weight
+                self.set_asn_weight(origin_asn, node_weight, weight_per_asn)
 
         return weight_per_asn
 
