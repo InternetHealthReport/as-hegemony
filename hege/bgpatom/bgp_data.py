@@ -10,10 +10,11 @@ except FileNotFoundError:
         config = json.load(f)
 
 RIB_BUFFER_INTERVAL = config["bgp_data"]["rib_buffer_interval"]
+BGP_DATA_TOPIC_PREFIX = config["bgp_data"]["data_topic"]
 
 
 def consume_ribs_message_at(collector: str, rib_timestamp: int):
-    bgp_data_topic = f"ihr_bgp_{collector}_ribs"
+    bgp_data_topic = f"{BGP_DATA_TOPIC_PREFIX}_{collector}_ribs"
     consumer = create_consumer_and_set_offset(bgp_data_topic, rib_timestamp)
 
     for bgp_msg, _ in consume_stream(consumer, rib_timestamp+RIB_BUFFER_INTERVAL):
@@ -31,7 +32,7 @@ def consume_ribs_message_at(collector: str, rib_timestamp: int):
     return dict()
 
 def consume_updates_message_upto(collector: str, start_timestamp: int, end_timestamp: int):
-    bgp_data_topic = f"ihr_bgp_{collector}_updates"
+    bgp_data_topic = f"{BGP_DATA_TOPIC_PREFIX}_{collector}_updates"
     consumer = create_consumer_and_set_offset(bgp_data_topic, start_timestamp)
 
     # data published at end_timestamp will not be consumed

@@ -8,6 +8,14 @@ from datetime import datetime
 from datetime import timedelta
 import msgpack
 import logging
+import json
+
+with open("./config.json", "r") as f:
+    config = json.load(f)
+
+RIB_BUFFER_INTERVAL = config["bgp_data"]["rib_buffer_interval"]
+BGP_DATA_TOPIC_PREFIX = config["bgp_data"]["data_topic"]
+DATA_RETENTION = config["kafka"]["default_topic_config"]["config"]["retention.ms"]
 
 
 def dt2ts(dt):
@@ -59,10 +67,10 @@ def push_data(record_type, collector, startts, endts):
     )
 
     # Create kafka topic
-    topic = "ihr_bgp_" + collector + "_" + record_type
-    admin_client = AdminClient({'bootstrap.servers': 'kafka:9092'})
+    topic = BGP_DATA_TOPIC_PREFIX + "_" + collector + "_" + record_type
+    admin_client = AdminClient({'bootstrap.servers': 'localhost:9092'})
 
-    topic_list = [NewTopic(topic, num_partitions=1, replication_factor=1, config={"retention.ms": 604800000000})]
+    topic_list = [NewTopic(topic, num_partitions=1, replication_factor=1, config={"retention.ms": DATA_RETENTION})]
     created_topic = admin_client.create_topics(topic_list)
 
     for topic, f in created_topic.items():
@@ -73,7 +81,7 @@ def push_data(record_type, collector, startts, endts):
             logging.warning("Failed to create topic {}: {}".format(topic, e))
 
     # Create producer
-    producer = Producer({'bootstrap.servers': 'kafka:9092',
+    producer = Producer({'bootstrap.servers': 'localhost:9092',
                          # 'linger.ms': 1000,
                          'default.topic.config': {'compression.codec': 'snappy'}})
 
@@ -88,15 +96,30 @@ def push_data(record_type, collector, startts, endts):
             elementDict = get_element_dict(elem)
             completeRecord["elements"].append(elementDict)
 
-        producer.produce(
-            topic,
-            msgpack.packb(completeRecord, use_bin_type=True),
-            callback=delivery_report,
-            timestamp=recordTimeStamp
-        )
+        try:
+            producer.produce(
+                topic,
+                msgpack.packb(completeRecord, use_bin_type=True),
+                callback=delivery_report,
+                timestamp=recordTimeStamp
+                )
 
-        # Trigger any available delivery report callbacks from previous produce() calls
-        producer.poll(0)
+            # Trigger any available delivery report callbacks from previous produce() calls
+            producer.poll(0)
+
+        except BufferError:
+            logging.warning('buffer error, the queue must be full! Flushing...')
+            producer.flush()
+
+            logging.info('queue flushed, try re-write previous message')
+
+            producer.produce(
+                topic,
+                msgpack.packb(completeRecord, use_bin_type=True),
+                callback=delivery_report,
+                timestamp=recordTimeStamp
+            )
+            producer.poll(0)
 
     # Wait for any outstanding messages to be delivered and delivery report
     # callbacks to be triggered.
@@ -168,7 +191,7 @@ is given then it download data for the current hour."
     if not os.path.exists(logDir):
         logDir = './'
     logging.basicConfig(
-        format=FORMAT, filename='{logDir}/ihr-kafka-bgpstream2_{}.log'.format(collector),
+        format=FORMAT, filename=f'{logDir}/ihr-kafka-bgpstream2_{collector}.log',
         level=logging.WARN, datefmt='%Y-%m-%d %H:%M:%S'
     )
     logging.warning("Started: %s" % sys.argv)
