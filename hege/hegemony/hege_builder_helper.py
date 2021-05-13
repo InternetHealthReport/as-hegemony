@@ -94,8 +94,9 @@ class HegeBuilderHelper:
         scope, scope_bc_score_list = args
 
         total_nb_peers = self.total_peer_asn_count
+        scope_nb_peers = len(self.peer_asn_set_per_scope[scope])
         if self.sparse_peers:
-            total_nb_peers = len(self.peer_asn_set_per_scope[scope])
+            total_nb_peers = scope_nb_peers
 
         for asn in scope_bc_score_list:
             peer_asn_count = len(scope_bc_score_list[asn])
@@ -104,7 +105,7 @@ class HegeBuilderHelper:
             peers_bc_score_list += [0] * (total_nb_peers - peer_asn_count) 
             hege_score = float(stats.trim_mean(peers_bc_score_list, 0.1))
             if hege_score != 0:
-                self.hegemony_score[scope][asn] = hege_score
+                self.hegemony_score[scope][asn] = {'hege': hege_score, 'nb_peers': scope_nb_peers}
 
 
 
