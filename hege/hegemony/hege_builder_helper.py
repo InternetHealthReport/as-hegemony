@@ -9,13 +9,14 @@ from hege.bcscore.bcscore_loader import BCSCORELoader
 from hege.utils.utils import str_datetime_to_timestamp
 
 class HegeBuilderHelper:
-    def __init__(self, collectors: list, timestamp: int, prefix_mode=False, partition_id=None):
+    def __init__(self, collectors: list, timestamp: int, prefix_mode=False, partition_id=None, sparse_peers=False):
         self.collectors = collectors
         self.timestamp = timestamp
         self.prefix_mode = prefix_mode
         self.partition_id = partition_id
         self.peer_asn_set = set()
         self.total_peer_asn_count = 0
+        self.sparse_peers = sparse_peers
 
         self.bc_score_list = defaultdict(lambda: defaultdict(list))
         self.hegemony_score = defaultdict(dict)
@@ -91,7 +92,9 @@ class HegeBuilderHelper:
 
         for asn in scope_bc_score_list:
             peer_asn_count = len(scope_bc_score_list[asn])
-            peers_bc_score_list = [0] * (self.total_peer_asn_count - peer_asn_count) + scope_bc_score_list[asn]
+            peers_bc_score_list = scope_bc_score_list[asn]
+            if not self.sparse_peers:
+                peers_bc_score_list += [0] * (self.total_peer_asn_count - peer_asn_count) 
             hege_score = float(stats.trim_mean(peers_bc_score_list, 0.1))
             if hege_score != 0:
                 self.hegemony_score[scope][asn] = hege_score

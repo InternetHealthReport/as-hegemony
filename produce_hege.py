@@ -20,6 +20,8 @@ if __name__ == "__main__":
                         help="With this flag, the script will run in prefix hege mode",
                         action='store_true')
     parser.add_argument("--partition_id", help="Select only one kafka partition")
+    parser.add_argument("--sparse_peers" "-s", help="Do not assume full-feed peers",
+                        action='store_true')
     # Example: 2020-08-01T00:00:00
     args = parser.parse_args()
     assert args.start_time and args.end_time
@@ -45,6 +47,6 @@ if __name__ == "__main__":
     start_ts = utils.str_datetime_to_timestamp(start_time_string)
     end_ts = utils.str_datetime_to_timestamp(end_time_string)
 
-    hege_builder = HegeBuilder(selected_collectors, start_ts, end_ts, args.prefix, args.partition_id)
+    hege_builder = HegeBuilder(selected_collectors, start_ts, end_ts, args.prefix, args.partition_id, args.sparse_peers)
     hege_data_producer = DataProducer(hege_builder)
     hege_data_producer.produce_kafka_messages_between()
