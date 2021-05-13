@@ -32,9 +32,9 @@
   },
   "hege": {
     "dump_interval": 900,
-    "data_topic__as": "ihr_hegemony_v6_tmp",
-    "meta_data_topic__as": "ihr_hegemony_meta_v6_tmp",
-    "data_topic__prefix": "ihr_prefix_hegemony_v6_tmp",
-    "meta_data_topic__prefix": "ihr_prefix_hegemony_meta_v6_tmp"
+    "data_topic__as": "ihr_hegemony_v6_tmp_test",
+    "meta_data_topic__as": "ihr_hegemony_meta_v6_tmp_test",
+    "data_topic__prefix": "ihr_prefix_hegemony_v6_tmp_test",
+    "meta_data_topic__prefix": "ihr_prefix_hegemony_meta_v6_tmp_test"
   }
 }

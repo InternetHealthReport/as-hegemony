@@ -1,6 +1,7 @@
 from collections import defaultdict
 import json
 import logging
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 from scipy import stats
@@ -15,6 +16,7 @@ class HegeBuilderHelper:
         self.prefix_mode = prefix_mode
         self.partition_id = partition_id
         self.peer_asn_set = set()
+        self.peer_asn_set_per_scope = defaultdict(set)
         self.total_peer_asn_count = 0
         self.sparse_peers = sparse_peers
 
@@ -55,6 +57,7 @@ class HegeBuilderHelper:
             for depended_as in depended_ases_bcscore:
                 for peer_asn, as_bcscore in depended_ases_bcscore[depended_as]:
                     self.peer_asn_set.add(peer_asn)
+                    self.peer_asn_set_per_scope[scope].add(peer_asn)
                     self.bc_score_list[scope][depended_as].append(as_bcscore)
         logging.debug(f"complete analyzing {collector}'s bcscore")
 
@@ -90,11 +93,15 @@ class HegeBuilderHelper:
 
         scope, scope_bc_score_list = args
 
+        total_nb_peers = self.total_peer_asn_count
+        if self.sparse_peers:
+            total_nb_peers = len(self.peer_asn_set_per_scope[scope])
+
         for asn in scope_bc_score_list:
             peer_asn_count = len(scope_bc_score_list[asn])
             peers_bc_score_list = scope_bc_score_list[asn]
-            if not self.sparse_peers:
-                peers_bc_score_list += [0] * (self.total_peer_asn_count - peer_asn_count) 
+            # Add 0 for peers that haven't seen this AS
+            peers_bc_score_list += [0] * (total_nb_peers - peer_asn_count) 
             hege_score = float(stats.trim_mean(peers_bc_score_list, 0.1))
             if hege_score != 0:
                 self.hegemony_score[scope][asn] = hege_score

@@ -20,7 +20,7 @@ if __name__ == "__main__":
                         help="With this flag, the script will run in prefix hege mode",
                         action='store_true')
     parser.add_argument("--partition_id", help="Select only one kafka partition")
-    parser.add_argument("--sparse_peers" "-s", help="Do not assume full-feed peers",
+    parser.add_argument("--sparse_peers", help="Do not assume full-feed peers",
                         action='store_true')
     # Example: 2020-08-01T00:00:00
     args = parser.parse_args()
