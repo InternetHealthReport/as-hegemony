@@ -9,18 +9,12 @@ from confluent_kafka import Consumer, TopicPartition, KafkaError
 from confluent_kafka.admin import AdminClient
 from confluent_kafka.cimpl import NewTopic, Producer, KafkaException
 
+from hege.utils.config import Config
 
-try: 
-    with open("/app/config.json", "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    with open("./config.json", "r") as f:
-        config = json.load(f)
-
-KAFKA_BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
-NO_NEW_MESSAGE_LIMIT = config["kafka"]["no_new_message_limit"]
-LEADER_WAIT_MINUTES = config["kafka"]["leader_wait_minutes"]
-DEFAULT_TOPIC_CONFIG = config["kafka"]["default_topic_config"]
+KAFKA_BOOTSTRAP_SERVERS = Config.get("kafka")["bootstrap_servers"]
+NO_NEW_MESSAGE_LIMIT = Config.get("kafka")["no_new_message_limit"]
+LEADER_WAIT_MINUTES = Config.get("kafka")["leader_wait_minutes"]
+DEFAULT_TOPIC_CONFIG = Config.get("kafka")["default_topic_config"]
 
 
 def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None):
@@ -80,7 +74,7 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
                 time.sleep(60)
                 continue
             else:
-                logging.error("KafkaException: " + ke)
+                logging.error("KafkaException: " + str(ke))
                 raise Exception("cannot assign topic partition")
 
         except Exception as e:

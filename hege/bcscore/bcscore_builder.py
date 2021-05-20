@@ -5,19 +5,13 @@ import math
 from hege.bgpatom.bgpatom_loader import BGPAtomLoader
 from hege.bcscore.viewpoint import ViewPoint
 from hege.utils import utils
+from hege.utils.config import Config
 
-try:
-    with open("/app/config.json", "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    with open("./config.json", "r") as f:
-        config = json.load(f)
-
-DUMP_INTERVAL = config["bcscore"]["dump_interval"]
-AS_BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic__as"]
-AS_BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic__as"]
-PREFIX_BCSCORE_META_DATA_TOPIC = config["bcscore"]["meta_data_topic__prefix"]
-PREFIX_BCSCORE_DATA_TOPIC = config["bcscore"]["data_topic__prefix"]
+DUMP_INTERVAL = Config.get("bcscore")["dump_interval"]
+AS_BCSCORE_META_DATA_TOPIC = Config.get("bcscore")["meta_data_topic__as"]
+AS_BCSCORE_DATA_TOPIC = Config.get("bcscore")["data_topic__as"]
+PREFIX_BCSCORE_META_DATA_TOPIC = Config.get("bcscore")["meta_data_topic__prefix"]
+PREFIX_BCSCORE_DATA_TOPIC = Config.get("bcscore")["data_topic__prefix"]
 
 DATA_BATCH_SIZE = 10000
 

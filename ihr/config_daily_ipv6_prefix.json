@@ -4,7 +4,7 @@
     "no_new_message_limit": 900,
     "leader_wait_minutes": 30,
     "default_topic_config": {
-      "num_partitions": 4,
+      "num_partitions": 10,
       "replication_factor": 2,
       "config": {
         "retention.ms": "604800000"
@@ -25,16 +25,16 @@
   },
   "bcscore": {
     "dump_interval": 900,
-    "meta_data_topic__as": "ihr_bcscore_meta",
-    "data_topic__as": "ihr_bcscore",
-    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta",
-    "data_topic__prefix": "ihr_bcscore_prefix"
+    "meta_data_topic__as": "ihr_bcscore_meta_v6",
+    "data_topic__as": "ihr_bcscore_v6",
+    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta_v6",
+    "data_topic__prefix": "ihr_bcscore_prefix_v6"
   },
   "hege": {
     "dump_interval": 900,
-    "data_topic__as": "ihr_hegemony",
-    "meta_data_topic__as": "ihr_hegemony_meta",
-    "data_topic__prefix": "ihr_prefix_hegemony",
-    "meta_data_topic__prefix": "ihr_prefix_hegemony_meta"
+    "data_topic__as": "ihr_hegemony_v6",
+    "meta_data_topic__as": "ihr_hegemony_meta_v6",
+    "data_topic__prefix": "ihr_hegemony_prefix_v6",
+    "meta_data_topic__prefix": "ihr_hegemony_prefix_meta_v6"
   }
 }

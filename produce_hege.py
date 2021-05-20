@@ -2,9 +2,7 @@ import argparse
 import logging
 import os
 
-from hege.hegemony.hege_builder import HegeBuilder
-from hege.utils.data_producer import DataProducer
-from hege.utils import utils
+from hege.utils.config import Config
 
 if __name__ == "__main__":
     text = """This script consumes all collectors bcscore and produce
@@ -22,13 +20,16 @@ if __name__ == "__main__":
     parser.add_argument("--partition_id", help="Select only one kafka partition")
     parser.add_argument("--sparse_peers", help="Do not assume full-feed peers",
                         action='store_true')
-    # Example: 2020-08-01T00:00:00
+    parser.add_argument("--config_file", "-C",
+                        help="Path to the configuration file")
+
     args = parser.parse_args()
     assert args.start_time and args.end_time
 
     selected_collectors = list(map(lambda x: x.strip(), args.collectors.split(",")))
     start_time_string = args.start_time
     end_time_string = args.end_time
+    Config.load(args.config_file)
 
     if args.prefix:
         log_filename_suffix = "prefix"
@@ -43,6 +44,11 @@ if __name__ == "__main__":
         format=FORMAT, filename=f"{logDir}/ihr-kafka-hegemony-{start_time_string}-{log_filename_suffix}.log",
         level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S'
     )
+
+    # import after the config parameters are fully loaded
+    from hege.hegemony.hege_builder import HegeBuilder
+    from hege.utils.data_producer import DataProducer
+    from hege.utils import utils
 
     start_ts = utils.str_datetime_to_timestamp(start_time_string)
     end_ts = utils.str_datetime_to_timestamp(end_time_string)

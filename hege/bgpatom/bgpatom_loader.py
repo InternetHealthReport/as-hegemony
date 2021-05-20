@@ -4,15 +4,10 @@ import json
 
 from hege.utils import kafka_data, utils
 from hege.utils.data_loader import DataLoader
+from hege.utils.config import Config
 
-try:
-    with open("/app/config.json", "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    with open("./config.json", "r") as f:
-        config = json.load(f)
         
-config = config["bgpatom"]
+config = Config.get("bgpatom")
 BGPATOM_DATA_TOPIC = config["data_topic"]
 BGPATOM_META_DATA_TOPIC = config["meta_data_topic"]
 

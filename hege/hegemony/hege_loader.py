@@ -3,16 +3,10 @@ import json
 import argparse
 
 from hege.utils import kafka_data, utils
+from hege.utils.config import Config
 
-try:
-    with open("/app/config.json", "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    with open("./config.json", "r") as f:
-        config = json.load(f)
-
-AS_HEGE_TOPIC = config["hege"]["data_topic__as"]
-PREFIX_HEGE_TOPIC = config["hege"]["data_topic__prefix"]
+AS_HEGE_TOPIC = Config.get("hege")["data_topic__as"]
+PREFIX_HEGE_TOPIC = Config.get("hege")["data_topic__prefix"]
 
 
 def __get_hege_consumer(start_timestamp: int, is_asn_query):

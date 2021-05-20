@@ -3,18 +3,13 @@ import json
 import logging
 
 from hege.utils import utils
+from hege.utils.config import Config
 
-try:
-    with open("/app/config.json", "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    with open("./config.json", "r") as f:
-        config = json.load(f)
 
 WITHDRAWN_PATH_ID = -1
-PREFIXES_IN_ATOM_BATCH_SIZE = config["bgpatom"]["prefixes_in_atom_batch_size"]
-FULL_FEED_PREFIXES_THRESHOLD_v4 = config["bgpatom"]["full_feed_threshold_v4"]
-FULL_FEED_PREFIXES_THRESHOLD_v6 = config["bgpatom"]["full_feed_threshold_v6"]
+PREFIXES_IN_ATOM_BATCH_SIZE = Config.get("bgpatom")["prefixes_in_atom_batch_size"]
+FULL_FEED_PREFIXES_THRESHOLD_v4 = Config.get("bgpatom")["full_feed_threshold_v4"]
+FULL_FEED_PREFIXES_THRESHOLD_v6 = Config.get("bgpatom")["full_feed_threshold_v6"]
 
 
 class BGPAtomPeer:

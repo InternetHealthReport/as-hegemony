@@ -6,22 +6,22 @@ import sys
 from subprocess import Popen
 import time
 import arrow
+import json
 import msgpack 
 from confluent_kafka import Consumer, TopicPartition, KafkaError
 
 
 slow_start = 600 # lag for starting bcscore and hegemony code
 
-NB_PARTITION = 4 # this should be greater or equal to the number of partition set in config.json
 BOOTSTRAP_SERVER = 'kafka1:9092'
-DATE_FMT = '%Y-%m-%dT00:00:00'
+DATE_FMT = '%Y-%m-%dT%H:%M:00'
 all_collectors = [
         'route-views.sydney', 'route-views.chicago',
         'route-views2', 'route-views.linx',
         'route-views.jinx', 
         'rrc00',
         'rrc04', 'rrc10', 'rrc11',
-#        'rrc12', 
+        'rrc12', 
        # 'rrc13',  # FIXME 
         'rrc14',
         'rrc15', 
@@ -39,7 +39,7 @@ def select_collectors(start_time):
     start_threshold = start_time.shift(hours=-2)
     end_threshold = start_time.shift(hours=2)
     for collector in all_collectors:
-        topic = 'tmp_ihr_bgp_%s_ribs' % collector
+        topic = 'ihr_bgp_%s_ribs' % collector
 
         # Instantiate Kafka Consumer
         consumer = Consumer({
@@ -81,16 +81,29 @@ def select_collectors(start_time):
 
 
 if len(sys.argv) < 2:
-    sys.exit(f'usage: {sys.argv[0]} [all|atom|bcscore|hege] [start_time]')
+    sys.exit(f'usage: {sys.argv[0]} all|atom|bcscore|hege|prefix ip_version config_file [start_time [end_time]]')
 
 analysis_type = sys.argv[1]
+ip_version = sys.argv[2]
+config_file = sys.argv[3]
 
-# Set start/end dates
-if len(sys.argv) > 2:
-    start_time = arrow.get(sys.argv[2])
+config = json.load(open(config_file, 'r'))
+
+# read start/end dates from command line
+end_time = None
+if len(sys.argv) > 4:
+    start_time = arrow.get(sys.argv[4])
+    if len(sys.argv) > 5:
+        end_time = arrow.get(sys.argv[5])
 else:
     start_time = arrow.now().replace(hour=0, minute=0, second=0)
-end_time= start_time.shift(days=1)
+
+# set default end time if not given
+if end_time is None:
+    if 'prefix' in analysis_type:
+        end_time= start_time.shift(minutes=15)
+    else:
+        end_time= start_time.shift(days=1)
 
 start_str = start_time.strftime(DATE_FMT)
 end_str = end_time.strftime(DATE_FMT)
@@ -105,28 +118,44 @@ if 'all' in analysis_type or 'atom' in analysis_type:
     # Produce BGP atoms for each collector
     for collector in selected_collectors: 
         print('# BGP atoms', collector, start_str, end_str)
-        #childs.append(Popen(['python3', '../produce_bgpatom.py', '-c', collector, '-s', start_str, '-e', end_str]))
-        print('using BGP atoms from IPv4 script')
+        if ip_version == '4':
+            childs.append(Popen(['python3', '../produce_bgpatom.py', '-C', config_file, '-c', collector, '-s', start_str, '-e', end_str]))
+        else:
+            print('Info: using BGP atoms from IPv4 script')
 
-#    time.sleep(slow_start)
+    time.sleep(slow_start)
 
 if 'all' in analysis_type or 'bcscore' in analysis_type:
     # Produce BC scores for each collector
     for collector in selected_collectors: 
         print('# Betweenness Centrality', collector, start_str, end_str)
-        childs.append(Popen(['python3', '../../../produce_bcscore.py', '-c', collector, '-s', start_str, '-e', end_str, '--ip_version', '6']))
+        childs.append(Popen(['python3', '../produce_bcscore.py', '-C', config_file, '-c', collector, '-s', start_str, '-e', end_str, '--ip_version', ip_version]))
 
     time.sleep(slow_start)
 
 if 'all' in analysis_type or 'hege' in analysis_type:
     # Produce AS Hegemony scores 
     print('# AS Hegemony')
-    print('python3 produce_hege.py -s %s -e %s -c %s ' % 
-        ( start_str, end_str, ' '.join(selected_collectors)) )
     #os.system('python3 produce_hege.py -s %s -e %s -c %s ' % 
     #     ( start_str, end_str, ','.join(selected_collectors)) )
-    for i in range(NB_PARTITION):
-        childs.append(Popen(['python3', '../../../produce_hege.py', '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
+    for i in range(config['kafka']['default_topic_config']['num_partitions']):
+        childs.append(Popen(['python3', '../produce_hege.py', '-C', config_file, '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
+
+if 'prefix' in analysis_type:
+    # Produce BC scores for each collector
+    for collector in selected_collectors: 
+        print('# Betweenness Centrality', collector, start_str, end_str)
+        childs.append(Popen(['python3', '../produce_bcscore.py', '-C', config_file, '-c', collector, '-s', start_str, '-e', end_str, '--ip_version', ip_version, '-p']))
+
+    time.sleep(slow_start)
+
+    #os.system('python3 produce_hege.py -s %s -e %s -c %s ' % 
+    #     ( start_str, end_str, ','.join(selected_collectors)) )
+    for i in range(config['kafka']['default_topic_config']['num_partitions']):
+        print("# AS Hegemony (partition %s)" % i)
+        hege_child = Popen(['python3', '../produce_hege.py', '-C', config_file, '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors), '-p' ])
+        hege_child.wait()
+
 
 # Wait for completion
 for child in childs:

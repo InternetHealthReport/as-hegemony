@@ -10,12 +10,12 @@ import msgpack
 import logging
 import json
 
-with open("./config.json", "r") as f:
-    config = json.load(f)
+from hege.utils.config import Config
 
-RIB_BUFFER_INTERVAL = config["bgp_data"]["rib_buffer_interval"]
-BGP_DATA_TOPIC_PREFIX = config["bgp_data"]["data_topic"]
-DATA_RETENTION = config["kafka"]["default_topic_config"]["config"]["retention.ms"]
+# Initialized in the __main__
+RIB_BUFFER_INTERVAL = None 
+BGP_DATA_TOPIC_PREFIX = None
+DATA_RETENTION = None
 
 
 def dt2ts(dt):
@@ -139,8 +139,15 @@ is given then it download data for the current hour."
                         help="Choose start time (Format: Y-m-dTH:M:S; Example: 2017-11-06T16:00:00)")
     parser.add_argument("--endTime", "-e", help="Choose end time (Format: Y-m-dTH:M:S; Example: 2017-11-06T16:00:00)")
     parser.add_argument("--type", "-t", help="Choose record type: ribs or updates")
+    parser.add_argument("--config_file", "-C",
+                        help="Path to the configuration file")
 
     args = parser.parse_args()
+    Config.load(args.config_file)
+
+    RIB_BUFFER_INTERVAL = Config.get("bgp_data")["rib_buffer_interval"]
+    BGP_DATA_TOPIC_PREFIX = Config.get("bgp_data")["data_topic"]
+    DATA_RETENTION = Config.get("kafka")["default_topic_config"]["config"]["retention.ms"]
 
     # initialize recordType
     recordType = ""

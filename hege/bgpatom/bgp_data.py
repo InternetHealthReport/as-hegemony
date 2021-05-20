@@ -2,15 +2,10 @@ import json
 from hege.utils import utils
 from hege.utils.kafka_data import create_consumer_and_set_offset, consume_stream
 
-try:
-    with open("/app/config.json", "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    with open("./config.json", "r") as f:
-        config = json.load(f)
+from hege.utils.config import Config
 
-RIB_BUFFER_INTERVAL = config["bgp_data"]["rib_buffer_interval"]
-BGP_DATA_TOPIC_PREFIX = config["bgp_data"]["data_topic"]
+RIB_BUFFER_INTERVAL = Config.get("bgp_data")["rib_buffer_interval"]
+BGP_DATA_TOPIC_PREFIX = Config.get("bgp_data")["data_topic"]
 
 
 def consume_ribs_message_at(collector: str, rib_timestamp: int):
