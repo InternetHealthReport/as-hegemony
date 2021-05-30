@@ -89,6 +89,10 @@ config_file = sys.argv[3]
 
 config = json.load(open(config_file, 'r'))
 
+# Remove collectors with no IPv6
+if ip_version == '6':
+    all_collectors.remove('route-views2')
+
 # read start/end dates from command line
 end_time = None
 if len(sys.argv) > 4:
@@ -149,8 +153,6 @@ if 'prefix' in analysis_type:
 
     time.sleep(slow_start)
 
-    #os.system('python3 produce_hege.py -s %s -e %s -c %s ' % 
-    #     ( start_str, end_str, ','.join(selected_collectors)) )
     for i in range(config['kafka']['default_topic_config']['num_partitions']):
         print("# AS Hegemony (partition %s)" % i)
         hege_child = Popen(['python3', '../produce_hege.py', '-C', config_file, '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors), '-p' ])

@@ -4,7 +4,7 @@
     "no_new_message_limit": 900,
     "leader_wait_minutes": 30,
     "default_topic_config": {
-      "num_partitions": 10,
+      "num_partitions": 4,
       "replication_factor": 2,
       "config": {
         "retention.ms": "604800000"
