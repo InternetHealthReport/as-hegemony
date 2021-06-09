@@ -89,12 +89,13 @@ class ViewPoint:
 
         for aspath in self.bgpatom:
             for prefix, origin_asn in self.bgpatom[aspath]:
-                self.set_asn_weight(origin_asn, 1, bcscore[prefix])
+                # scope for prefixes include the origin ASN
+                self.set_asn_weight(origin_asn, 1, bcscore[prefix+'_'+origin_asn])
                 for asn in aspath:
-                    self.set_asn_weight(asn, 1, bcscore[prefix])
+                    self.set_asn_weight(asn, 1, bcscore[prefix+'_'+origin_asn])
 
-        for prefix in bcscore:
-            yield bcscore[prefix], prefix
+        for prefix, bcs in bcscore.items():
+            yield bcs, prefix
 
     def __calculate_viewpoint_bcscore_for_asn(self):
         self.calculate_prefixes_weight()
