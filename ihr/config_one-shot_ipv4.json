@@ -13,7 +13,7 @@
   },
   "bgp_data": {
     "rib_buffer_interval": 1800,
-    "data_topic": "tmp_ihr_bgp"
+    "data_topic": "ihr_bgp"
   },
   "bgpatom": {
     "full_feed_threshold_v4": 600000,
