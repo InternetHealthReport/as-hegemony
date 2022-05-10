@@ -1,7 +1,6 @@
 from collections import defaultdict
 import json
 import logging
-from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 from scipy import stats
