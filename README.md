@@ -1,4 +1,4 @@
-## Prefix-hege
+## AS Hegemony
 
 The purpose of this project is to calculate hegemony value for any AS or prefix globally reachable.
 
