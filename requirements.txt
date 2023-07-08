@@ -1,0 +1,6 @@
+arrow
+py-radix
+scipy
+msgpack
+confluent_kafka
+
