@@ -39,9 +39,9 @@ all_collectors = [
 #        'rrc19', # unavailable?
         'rrc20', 
         'rrc23', 
-        'rrc24'
-        'rrc25'
-        'rrc26'
+        'rrc24',
+        'rrc25',
+        'rrc26',
         ]
 
 selected_collectors = []
