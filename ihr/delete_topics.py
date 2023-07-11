@@ -27,12 +27,31 @@ if __name__ == '__main__':
     topics = []
     collectors = [
         'route-views.sydney', 'route-views.chicago',
-        'route-views2', 'route-views.linx',
+        'route-views2', 
+        'route-views3', 
+        'route-views4', 
+        'route-views5', 
+        'route-views.linx',
+        'route-views.rio',
+        'route-views.sg',
+        'route-views.napafrica', 
         'rrc00',
-        'rrc04', 'rrc10', 'rrc11',
-        'rrc12', 'rrc13', 'rrc14',
-        'rrc15', 'rrc16', 'rrc19',
-        'rrc20', 'rrc23', 'rrc24'
+        'rrc01',
+        'rrc04', 
+        'rrc06', 
+        'rrc10', 
+        'rrc11',
+        'rrc12', 
+        'rrc13',  # FIXME 
+        'rrc14',
+        'rrc15', 
+        'rrc16',  # slow updates?
+#        'rrc19', # unavailable?
+        'rrc20', 
+        'rrc23', 
+        'rrc24',
+        'rrc25',
+        'rrc26',
         ]
 
     prefix = [
