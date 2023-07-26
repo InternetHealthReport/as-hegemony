@@ -63,9 +63,14 @@ def select_collectors(start_time):
             })
         partition = TopicPartition(topic, 0, int(start_threshold.timestamp())*1000)
 
-        time_offset = consumer.offsets_for_times( [partition] )
-        # consumer.seek_to_end()
-        # offset = consumer.position(partition)-1
+        try:
+            time_offset = consumer.offsets_for_times( [partition] , timeout = 60)
+            # consumer.seek_to_end()
+            # offset = consumer.position(partition)-1
+        except Exception as e:
+            print(collector, "'s kafka RIB topic inexistant!")
+            consumer.close()
+            continue
 
         if time_offset[0].offset == -1: 
             print(collector, ' ignored! ')
@@ -138,6 +143,7 @@ if 'all' in analysis_type or 'atom' in analysis_type:
         print('# BGP atoms', collector, start_str, end_str)
         if ip_version == '4':
             childs.append(Popen(['python3', '../produce_bgpatom.py', '-C', config_file, '-c', collector, '-s', start_str, '-e', end_str]))
+            time.sleep(1)
         else:
             print('Info: using BGP atoms from IPv4 script')
 
@@ -148,6 +154,7 @@ if 'all' in analysis_type or 'bcscore' in analysis_type:
     for collector in selected_collectors: 
         print('# Betweenness Centrality', collector, start_str, end_str)
         childs.append(Popen(['python3', '../produce_bcscore.py', '-C', config_file, '-c', collector, '-s', start_str, '-e', end_str, '--ip_version', ip_version]))
+        time.sleep(1)
 
     time.sleep(slow_start)
 
@@ -158,12 +165,14 @@ if 'all' in analysis_type or 'hege' in analysis_type:
     #     ( start_str, end_str, ','.join(selected_collectors)) )
     for i in range(config['kafka']['default_topic_config']['num_partitions']):
         childs.append(Popen(['python3', '../produce_hege.py', '-C', config_file, '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors) ]) )
+        time.sleep(1)
 
 if 'prefix' in analysis_type:
     # Produce BC scores for each collector
     for collector in selected_collectors: 
         print('# Betweenness Centrality', collector, start_str, end_str)
         childs.append(Popen(['python3', '../produce_bcscore.py', '-C', config_file, '-c', collector, '-s', start_str, '-e', end_str, '--ip_version', ip_version, '-p']))
+        time.sleep(1)
 
     time.sleep(slow_start)
 

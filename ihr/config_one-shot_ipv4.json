@@ -4,7 +4,7 @@
     "no_new_message_limit": 900,
     "leader_wait_minutes": 30,
     "default_topic_config": {
-      "num_partitions": 4,
+      "num_partitions": 10,
       "replication_factor": 1,
       "config": {
         "retention.ms": "60480000000"
@@ -20,15 +20,15 @@
     "full_feed_threshold_v6": 80000,
     "dump_interval": 900,
     "prefixes_in_atom_batch_size": 50,
-    "meta_data_topic": "ihr_bgp_atom_meta_tmp",
-    "data_topic": "ihr_bgp_atom_tmp"
+    "meta_data_topic": "ihr_bgp_atom_meta",
+    "data_topic": "ihr_bgp_atom"
   },
   "bcscore": {
     "dump_interval": 900,
-    "meta_data_topic__as": "ihr_bcscore_meta_tmp",
-    "data_topic__as": "ihr_bcscore_tmp",
-    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta_tmp",
-    "data_topic__prefix": "ihr_bcscore_prefix_tmp"
+    "meta_data_topic__as": "ihr_bcscore_meta",
+    "data_topic__as": "ihr_bcscore",
+    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta",
+    "data_topic__prefix": "ihr_bcscore_prefix"
   },
   "hege": {
     "dump_interval": 900,
