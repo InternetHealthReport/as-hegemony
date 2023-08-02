@@ -179,7 +179,8 @@ if 'prefix' in analysis_type:
     for i in range(config['kafka']['default_topic_config']['num_partitions']):
         print("# AS Hegemony (partition %s)" % i)
         hege_child = Popen(['python3', '../produce_hege.py', '-C', config_file, '-s', start_str, '-e', end_str, '--partition_id', str(i), '-c', ','.join(selected_collectors), '-p' ])
-        hege_child.wait()
+        if i % 2 == 0: # Run two instances in parrallel
+            hege_child.wait()
 
 
 # Wait for completion
