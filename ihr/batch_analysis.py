@@ -147,7 +147,8 @@ if 'all' in analysis_type or 'atom' in analysis_type:
         else:
             print('Info: using BGP atoms from IPv4 script')
 
-    time.sleep(slow_start)
+    if ip_version == '4':
+        time.sleep(slow_start)
 
 if 'all' in analysis_type or 'bcscore' in analysis_type:
     # Produce BC scores for each collector
