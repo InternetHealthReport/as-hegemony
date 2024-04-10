@@ -27,14 +27,14 @@
     "dump_interval": 900,
     "meta_data_topic__as": "ihr_bcscore_meta_v6",
     "data_topic__as": "ihr_bcscore_v6",
-    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta_v6",
-    "data_topic__prefix": "ihr_bcscore_prefix_v6"
+    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta_ipv6",
+    "data_topic__prefix": "ihr_bcscore_prefix_ipv6"
   },
   "hege": {
     "dump_interval": 900,
-    "data_topic__as": "ihr_hegemony_v6",
+    "data_topic__as": "ihr_hegemony_ipv6",
     "meta_data_topic__as": "ihr_hegemony_meta_v6",
-    "data_topic__prefix": "ihr_hegemony_prefix_v6",
-    "meta_data_topic__prefix": "ihr_hegemony_prefix_meta_v6"
+    "data_topic__prefix": "ihr_hegemony_prefix_ipv6",
+    "meta_data_topic__prefix": "ihr_hegemony_prefix_meta_ipv6"
   }
 }
