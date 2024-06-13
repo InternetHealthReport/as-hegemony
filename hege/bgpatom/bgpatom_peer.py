@@ -63,9 +63,9 @@ class BGPAtomPeer:
             self.update_withdrawal_message(prefix)
 
     def update_announcement_message(self, prefix: str, announced_aspath: list):
-        non_prepended_aspath = utils.remove_path_prepending(announced_aspath)
-        origin_asn = non_prepended_aspath[-1]
-        atom_encoded_path = tuple(non_prepended_aspath[:-1])
+        deduplicated_aspath = utils.deduplicate_as_path(announced_aspath)
+        origin_asn = deduplicated_aspath[-1]
+        atom_encoded_path = tuple(deduplicated_aspath[:-1])
 
         path_id = self.get_path_id(atom_encoded_path)
         self.prefix_to_aspath[prefix] = path_id
