@@ -45,7 +45,7 @@ class HegeBuilderHelper:
     def read_data_for_as_hegemony(self, collector: str):
         loaded_bcscore = self.load_bcscore(collector, self.partition_id)
 
-        if loaded_bcscore is None:
+        if not loaded_bcscore:
             logging.debug(f"could not read collector {collector}'s bcscore;")
             return False, collector 
 
