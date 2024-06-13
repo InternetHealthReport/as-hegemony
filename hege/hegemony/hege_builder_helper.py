@@ -19,7 +19,7 @@ class HegeBuilderHelper:
         self.total_peer_asn_count = 0
         self.sparse_peers = sparse_peers
 
-        self.bc_score_list = defaultdict(lambda: defaultdict(list))
+        self.bc_score_list = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         self.hegemony_score = defaultdict(dict)
 
     def build_hegemony_score(self):
@@ -45,7 +45,7 @@ class HegeBuilderHelper:
     def read_data_for_as_hegemony(self, collector: str):
         loaded_bcscore = self.load_bcscore(collector, self.partition_id)
 
-        if loaded_bcscore is None:
+        if not loaded_bcscore:
             logging.debug(f"could not read collector {collector}'s bcscore;")
             return False, collector 
 
@@ -57,7 +57,7 @@ class HegeBuilderHelper:
                 for peer_asn, as_bcscore in depended_ases_bcscore[depended_as]:
                     self.peer_asn_set.add(peer_asn)
                     self.peer_asn_set_per_scope[scope].add(peer_asn)
-                    self.bc_score_list[scope][depended_as].append(as_bcscore)
+                    self.bc_score_list[scope][depended_as][peer_asn].append(as_bcscore)
         logging.debug(f"complete analyzing {collector}'s bcscore")
 
         return True, collector 
@@ -90,6 +90,7 @@ class HegeBuilderHelper:
         # else:
         #    total_asn_count = len(scope_bc_score_list[scope])
 
+        # Calculate hegemony per scope.
         scope, scope_bc_score_list = args
 
         total_nb_peers = self.total_peer_asn_count
@@ -97,12 +98,23 @@ class HegeBuilderHelper:
         if self.sparse_peers:
             total_nb_peers = scope_nb_peers
 
-        for asn in scope_bc_score_list:
-            peer_asn_count = len(scope_bc_score_list[asn])
-            peers_bc_score_list = scope_bc_score_list[asn]
+        # Iterate over ASes in the local graph of the scope.
+        # Each AS has a list of BS scores from different peer ASes.
+        for asn, peers_bc_scores in scope_bc_score_list.items():
+            flattened_peers_bc_score_list = list()
+            # Some peer ASes might be present at multiple collectors, giving multiple BC
+            # scores for the same AS. Average these (like is done in
+            # BGPAtomBuilder.calculate_bcscore_per_asn for peer ASes with multiple peer
+            # IPs at one collector) to prevent skew of the trim_mean.
+            for peer_asn, peer_bc_score_list in peers_bc_scores.items():
+                if len(peer_bc_score_list) == 1:
+                    flattened_peers_bc_score_list.append(peer_bc_score_list[0])
+                else:
+                    flattened_peers_bc_score_list.append(sum(peer_bc_score_list) / len(peer_bc_score_list))
             # Add 0 for peers that haven't seen this AS
-            peers_bc_score_list += [0] * (total_nb_peers - peer_asn_count) 
-            hege_score = float(stats.trim_mean(peers_bc_score_list, 0.1))
+            peer_asn_count = len(scope_bc_score_list[asn])
+            flattened_peers_bc_score_list += [0] * (total_nb_peers - peer_asn_count)
+            hege_score = float(stats.trim_mean(flattened_peers_bc_score_list, 0.1))
             if hege_score != 0:
                 self.hegemony_score[scope][asn] = {'hege': hege_score, 'nb_peers': scope_nb_peers}
 

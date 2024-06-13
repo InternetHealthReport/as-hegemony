@@ -24,15 +24,20 @@ def str_datetime_to_timestamp(str_dt: str, fmt=DATETIME_STRING_FORMAT):
     return datetime_to_timestamp(dt)
 
 
-def remove_path_prepending(prepended_aspath: list):
-    prev = ""
-    aspath = list()
-    for asn in prepended_aspath:
-        if asn == prev:
+def deduplicate_as_path(aspath: list):
+    """Remove duplicate ASNs from the path and return the remaining path in order.
+
+    Primary purpose is to remove path prepending, but also handle cases of "invalid" AS
+    paths of the form A B A, which are rare but exist.
+    """
+    seen_asns = set()
+    dedup_aspath = list()
+    for asn in aspath:
+        if asn in seen_asns:
             continue
-        aspath.append(asn)
-        prev = asn
-    return aspath
+        dedup_aspath.append(asn)
+        seen_asns.add(asn)
+    return dedup_aspath
 
 
 def is_ip_v6(prefix: str):
