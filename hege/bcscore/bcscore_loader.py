@@ -1,10 +1,9 @@
-from collections import defaultdict
 import logging
-import json
+from collections import defaultdict
 
 from hege.utils import kafka_data, utils
-from hege.utils.data_loader import DataLoader
 from hege.utils.config import Config
+from hege.utils.data_loader import DataLoader
 
 config = Config.get("bcscore")
 
@@ -15,6 +14,18 @@ PREFIX_BCSCORE_META_DATA_TOPIC = config["meta_data_topic__prefix"]
 
 
 class BCSCORELoader(DataLoader):
+    """Load BC scores for the specified timestamp and collector from Kafka and insert it
+    into a single structure.
+
+    The structure has the format:
+        dict[scope] -> dict[asn] -> list[(peer_asn, bc_score)]
+
+    If the scope is equal to -1, the nested structure represents the global graph,
+    otherwise it is the local graph of the respective scope.
+
+    The nested dict always contains the scope itself. All BC scores should be 1.0 in
+    this case.
+    """
     def __init__(self, collector: str, timestamp: int, prefix_mode=False, partition_id=None):
         super().__init__(timestamp)
         self.collector = collector

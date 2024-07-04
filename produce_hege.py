@@ -5,8 +5,8 @@ import os
 from hege.utils.config import Config
 
 if __name__ == "__main__":
-    text = """This script consumes all collectors bcscore and produce
-    as hegemony score between --start_time and --end_time."""
+    text = """This script consumes the BC scores of the specified collectors and
+    produces AS hegemony score between --start_time and --end_time."""
 
     parser = argparse.ArgumentParser(description=text)
     parser.add_argument("--start_time", "-s", help="Choose the start time")
@@ -47,8 +47,8 @@ if __name__ == "__main__":
 
     # import after the config parameters are fully loaded
     from hege.hegemony.hege_builder import HegeBuilder
-    from hege.utils.data_producer import DataProducer
     from hege.utils import utils
+    from hege.utils.data_producer import DataProducer
 
     start_ts = utils.str_datetime_to_timestamp(start_time_string)
     end_ts = utils.str_datetime_to_timestamp(end_time_string)
