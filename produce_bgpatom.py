@@ -5,9 +5,9 @@ import os
 from hege.utils.config import Config
 
 if __name__ == "__main__":
-    text = """This script consumes BGP Data from selected collector(s) 
-    and produce bgpatom between --start_time and --end_time. It then 
-    analyzes and publishes BGP atom to kafka cluster"""
+    text = """This script consumes BGP Data from the selected collector and produces BGP
+    atoms between --start_time and --end_time. It then analyzes and publishes the BGP
+    atoms to the Kafka cluster"""
 
     parser = argparse.ArgumentParser(description=text)
     parser.add_argument("--collector", "-c", help="Choose collector to push data for")
@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
     # import after the config parameters are fully loaded
     from hege.bgpatom.bgpatom_builder import BGPAtomBuilder
-    from hege.utils.data_producer import DataProducer
     from hege.utils import utils
+    from hege.utils.data_producer import DataProducer
 
     start_ts = utils.str_datetime_to_timestamp(start_time_string)
     end_ts = utils.str_datetime_to_timestamp(end_time_string)

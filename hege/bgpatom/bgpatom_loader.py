@@ -1,18 +1,23 @@
-from collections import defaultdict
 import logging
-import json
+from collections import defaultdict
 
 from hege.utils import kafka_data, utils
-from hege.utils.data_loader import DataLoader
 from hege.utils.config import Config
+from hege.utils.data_loader import DataLoader
 
-        
 config = Config.get("bgpatom")
 BGPATOM_DATA_TOPIC = config["data_topic"]
 BGPATOM_META_DATA_TOPIC = config["meta_data_topic"]
 
 
 class BGPAtomLoader(DataLoader):
+    """Load BGP atom data for the specified timestamp from Kafka and insert it into a
+    single structure.
+
+    The structure has the format:
+        dict[(peer_ip, peer_asn)] -> dict[as_path] -> list[prefix]
+    Note that as_path is a tuple by itself.
+    """
     def __init__(self, collector: str, timestamp: int):
         super().__init__(timestamp)
         self.collector = collector

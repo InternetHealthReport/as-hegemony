@@ -1,19 +1,18 @@
-import sys
-import os
 import argparse
+import logging
+import os
+import sys
+from datetime import datetime, timedelta
+
+import msgpack
 from confluent_kafka import Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 from pybgpstream import BGPStream
-from datetime import datetime
-from datetime import timedelta
-import msgpack
-import logging
-import json
 
 from hege.utils.config import Config
 
 # Initialized in the __main__
-RIB_BUFFER_INTERVAL = None 
+RIB_BUFFER_INTERVAL = None
 BGP_DATA_TOPIC_PREFIX = None
 DATA_RETENTION = None
 
@@ -102,7 +101,7 @@ def push_data(record_type, collector, startts, endts):
                 msgpack.packb(completeRecord, use_bin_type=True),
                 callback=delivery_report,
                 timestamp=recordTimeStamp
-                )
+            )
 
             # Trigger any available delivery report callbacks from previous produce() calls
             producer.poll(0)

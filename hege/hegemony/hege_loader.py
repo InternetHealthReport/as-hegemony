@@ -1,5 +1,3 @@
-import logging
-import json
 import argparse
 
 from hege.utils import kafka_data, utils
@@ -26,7 +24,7 @@ def get_hegemony_score_for_scope_at(selected_scope: str, timestamp: int):
         # message_timestamp = message["timestamp"]
         message_scope = message["scope"]
         # if message_timestamp != timestamp:
-            # return
+        # return
         if message_scope == selected_scope:
             hegemony_score = message["scope_hegemony"]
             print(f"found hegemony score for {selected_scope}, {hegemony_score}")
