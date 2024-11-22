@@ -55,7 +55,7 @@ if __name__ == '__main__':
         ]
 
     prefix = [
-    #        f'ihr_bgp_atom{suffix}_', f'ihr_bgp_atom_meta{suffix}_',
+            f'ihr_bgp_atom{suffix}_', f'ihr_bgp_atom_meta{suffix}_',
             f'ihr_bcscore{suffix}_', f'ihr_bcscore_meta{suffix}_',
             ]
 
