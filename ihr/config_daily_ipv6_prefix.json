@@ -7,7 +7,7 @@
       "num_partitions": 4,
       "replication_factor": 2,
       "config": {
-        "retention.ms": "604800000"
+        "retention.ms": "259200000"
       }
     }
   },
@@ -16,8 +16,8 @@
     "data_topic": "ihr_bgp"
   },
   "bgpatom": {
-    "full_feed_threshold_v4": 600000,
-    "full_feed_threshold_v6": 80000,
+    "full_feed_threshold_v4": 800000,
+    "full_feed_threshold_v6": 160000,
     "dump_interval": 900,
     "prefixes_in_atom_batch_size": 50,
     "meta_data_topic": "ihr_bgp_atom_meta",
