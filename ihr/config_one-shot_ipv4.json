@@ -1,6 +1,6 @@
 {
   "kafka": {
-    "bootstrap_servers": "localhost:9092",
+    "bootstrap_servers": "kafka1.storage.iijlab.net:9092,kafka2.storage.iijlab.net:9092,kafka3.storage.iijlab.net:9092,kafka4.storage.iijlab.net:9092,kafka5.storage.iijlab.net:9092,kafka6.storage.iijlab.net:9092",
     "no_new_message_limit": 900,
     "leader_wait_minutes": 30,
     "default_topic_config": {
