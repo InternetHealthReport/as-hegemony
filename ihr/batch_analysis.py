@@ -13,7 +13,7 @@ from confluent_kafka import Consumer, TopicPartition, KafkaError
 
 slow_start = 600 # lag for starting bcscore and hegemony code
 
-BOOTSTRAP_SERVER = 'kafka1:9092'
+BOOTSTRAP_SERVER = 'kafka1.storage.iijlab.net:9092,kafka2.storage.iijlab.net:9092,kafka3.storage.iijlab.net:9092'
 DATE_FMT = '%Y-%m-%dT%H:%M:00'
 all_collectors = [
         'route-views.sydney', 'route-views.chicago',

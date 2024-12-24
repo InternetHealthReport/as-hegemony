@@ -22,7 +22,7 @@ def delete_topics(a, topics):
 
 
 if __name__ == '__main__':
-    admin = AdminClient({'bootstrap.servers': 'kafka1:9092'})
+    admin = AdminClient({'bootstrap.servers': 'kafka1.storage.iijlab.net:9092,kafka2.storage.iijlab.net:9092,kafka3.storage.iijlab.net:9092'})
     suffix = sys.argv[1]
     topics = []
     collectors = [
