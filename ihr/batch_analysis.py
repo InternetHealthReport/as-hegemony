@@ -18,11 +18,11 @@ DATE_FMT = '%Y-%m-%dT%H:%M:00'
 all_collectors = [
         'route-views.sydney', 'route-views.chicago',
         'route-views2', 
-        'route-views3', 
+#        'route-views3', 
         'route-views4', 
         'route-views5', 
 #        'route-views.linx',
-        'route-views.rio',
+#        'route-views.rio',
         'route-views.sg',
         'route-views.napafrica', 
 #        'rrc00',
