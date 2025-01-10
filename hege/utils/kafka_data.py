@@ -75,7 +75,7 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
                 continue
             else:
                 logging.error("KafkaException: " + str(ke))
-                raise Exception("cannot assign topic partition")
+                raise Exception(f"cannot assign topic partition: {topic}:{partition_id}")
 
         except Exception as e:
             logging.error(e)
