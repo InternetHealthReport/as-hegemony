@@ -1,0 +1,40 @@
+{
+  "kafka": {
+    "bootstrap_servers": "kafka1.storage.iijlab.net:9092,kafka2.storage.iijlab.net:9092,kafka3.storage.iijlab.net:9092,kafka4.storage.iijlab.net:9092,kafka5.storage.iijlab.net:9092,kafka6.storage.iijlab.net:9092",
+    "no_new_message_limit": 10,
+    "leader_wait_minutes": 30,
+    "default_topic_config": {
+      "num_partitions": 10,
+      "replication_factor": 2,
+      "config": {
+        "retention.ms": "2592000000"
+      }
+    }
+  },
+  "bgp_data": {
+    "rib_buffer_interval": 0,
+    "data_topic": "ihr_bgp"
+  },
+  "bgpatom": {
+    "full_feed_threshold_v4": 0,
+    "full_feed_threshold_v6": 0,
+    "dump_interval": 900,
+    "prefixes_in_atom_batch_size": 50,
+    "meta_data_topic": "ihr_bgp_atom_meta",
+    "data_topic": "ihr_bgp_atom"
+  },
+  "bcscore": {
+    "dump_interval": 1,
+    "meta_data_topic__as": "ihr_bcscore_meta",
+    "data_topic__as": "ihr_bcscore",
+    "meta_data_topic__prefix": "ihr_bcscore_prefix_meta",
+    "data_topic__prefix": "ihr_bcscore_prefix"
+  },
+  "hege": {
+    "dump_interval": 900,
+    "data_topic__as": "ihr_hegemony_traceroutev4_topology_weekly_rank_rtt",
+    "meta_data_topic__as": "ihr_hegemony_meta_traceroutev4_topology_weekly_rank_rtt",
+    "data_topic__prefix": "ihr_prefix_hegemony_traceroutev4_topology_weekly_rank_rtt",
+    "meta_data_topic__prefix": "ihr_prefix_hegemony_meta_traceroutev4_topology_weekly_rank_rtt"
+  }
+}
