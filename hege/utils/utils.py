@@ -30,6 +30,14 @@ def deduplicate_as_path(aspath: list):
     Primary purpose is to remove path prepending, but also handle cases of "invalid" AS
     paths of the form A B A, which are rare but exist.
     """
+
+    # Cut end of the path if origin AS appears multiple times
+    origin_as = aspath[-1]
+    if origin_as in aspath[:-1]:
+        first_idx = aspath.index(origin_as)
+        aspath = aspath[:first_idx+1]
+
+    # Remove deduplicated ASes
     seen_asns = set()
     dedup_aspath = list()
     for asn in aspath:
