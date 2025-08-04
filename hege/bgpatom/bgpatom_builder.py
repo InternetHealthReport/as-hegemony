@@ -1,4 +1,4 @@
-from hege.bgpatom.bgp_data import consume_ribs_and_update_message_upto
+from hege.bgpatom.bgp_data import consume_ribs_and_update_message_upto, consume_topic_messages_between
 from hege.bgpatom.bgpatom_peer import BGPAtomPeer
 from hege.utils import utils
 from hege.utils.config import Config
@@ -20,10 +20,11 @@ class BGPAtomBuilder:
     For a detailed description of BGP atoms, check the BGPAtomPeer class.
     """
 
-    def __init__(self, collector, start_timestamp: int, end_timestamp: int):
+    def __init__(self, collector, start_timestamp: int, end_timestamp: int, one_shot: bool = False):
         self.collector = collector
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.one_shot = one_shot
         # Map a peer IP to its corresponding BGPAtomPeer object.
         self.bgpatom_peers = dict()
 
@@ -42,6 +43,19 @@ class BGPAtomBuilder:
         self.bgpatom_peers[peer_address] = BGPAtomPeer(peer_address)
 
     def consume_and_calculate(self):
+        if self.one_shot:
+            return self.consume_and_calculate_one_shot()
+        else:
+            return self.consume_and_calculate_continuous()
+
+    def consume_and_calculate_one_shot(self):
+        for element in consume_topic_messages_between(self.start_timestamp, self.end_timestamp):
+            self.handle_element(element)
+
+        bgpatom_messages_generator = self.dump_bgpatom_messages(self.start_timestamp)
+        return self.start_timestamp, bgpatom_messages_generator
+
+    def consume_and_calculate_continuous(self):
         """Read BGP RIB and update topics, create BGP atoms, and yield atom state every
         DUMP_INTERVAL seconds.
 
@@ -64,15 +78,18 @@ class BGPAtomBuilder:
                 yield next_dumped_timestamp, bgpatom_messages_generator
                 next_dumped_timestamp += DUMP_INTERVAL
 
-            peer_address = element["peer_address"]
-            peer_asn = element["peer_asn"]
-            # Get or create BGPAtomPeer object for this peer IP.
-            bgpatom_peer = self.get_bgpatom_peer(peer_address)
-            # Set the peer ASN every time, even if we retrieved an existing object. This
-            # will trigger a warning if there is some mismatch.
-            bgpatom_peer.set_peer_asn(peer_asn)
-            # Update the atom state.
-            bgpatom_peer.update_prefix_status(element)
+            self.handle_element(element)
+
+    def handle_element(self, element: dict):
+        peer_address = element["peer_address"]
+        peer_asn = element["peer_asn"]
+        # Get or create BGPAtomPeer object for this peer IP.
+        bgpatom_peer = self.get_bgpatom_peer(peer_address)
+        # Set the peer ASN every time, even if we retrieved an existing object. This
+        # will trigger a warning if there is some mismatch.
+        bgpatom_peer.set_peer_asn(peer_asn)
+        # Update the atom state.
+        bgpatom_peer.update_prefix_status(element)
 
     def dump_bgpatom_messages(self, timestamp: int):
         """Yield formatted BGP atom Kafka messages.

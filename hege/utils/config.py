@@ -8,7 +8,7 @@ class Config:
     @staticmethod
     def load(fname=None):
         if fname is None:
-            fnames = ["/app/config.json", "./config.json"]  
+            fnames = ["/app/config.json", "./config.json"]
         else:
             fnames = [fname]
 

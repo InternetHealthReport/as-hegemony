@@ -15,6 +15,8 @@ if __name__ == "__main__":
     parser.add_argument("--end_time", "-e", help="Choose the end time ")
     parser.add_argument("--config_file", "-C",
                         help="Path to the configuration file")
+    parser.add_argument('--one-shot', action='store_true',
+                        help='Do a one-shot calculation based on a single Kafka topic')
 
     args = parser.parse_args()
     assert args.start_time and args.collector and args.end_time
@@ -41,6 +43,6 @@ if __name__ == "__main__":
     start_ts = utils.str_datetime_to_timestamp(start_time_string)
     end_ts = utils.str_datetime_to_timestamp(end_time_string)
 
-    bgpatom_builder = BGPAtomBuilder(selected_collector, start_ts, end_ts)
+    bgpatom_builder = BGPAtomBuilder(selected_collector, start_ts, end_ts, args.one_shot)
     bgpatom_data_producer = DataProducer(bgpatom_builder)
     bgpatom_data_producer.produce_kafka_messages_between()
