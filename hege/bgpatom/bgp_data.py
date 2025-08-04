@@ -16,8 +16,8 @@ def consume_ribs_message_at(collector: str, rib_timestamp: int):
 
     Args:
         collector (str): Name of the collector
-        rib_timestamp (int): Start timestamp of read window and timestamp that is forced
-        in returned elements.
+        rib_timestamp (int): Start timestamp (in s) of read window and timestamp that is
+            forced in returned elements.
 
     Yields:
         dict: Each returned element represents a BGP RIB table dump message with the
@@ -38,12 +38,7 @@ def consume_ribs_message_at(collector: str, rib_timestamp: int):
     bgp_data_topic = f"{BGP_DATA_TOPIC_PREFIX}_{collector}_ribs"
     consumer = create_consumer_and_set_offset(bgp_data_topic, rib_timestamp)
 
-    for bgp_msg, _ in consume_stream(consumer, rib_timestamp+RIB_BUFFER_INTERVAL):
-        # dump_timestamp = bgp_msg["rec"]["time"]
-
-        #        if dump_timestamp - rib_timestamp > RIB_BUFFER_INTERVAL:
-        #            return dict()
-
+    for bgp_msg, _ in consume_stream(consumer, rib_timestamp + RIB_BUFFER_INTERVAL):
         for element in bgp_msg["elements"]:
             element_type = element["type"]
             element["time"] = rib_timestamp
@@ -59,8 +54,8 @@ def consume_updates_message_upto(collector: str, start_timestamp: int, end_times
 
     Args:
         collector (str): Name of the collector
-        start_timestamp (int): Start timestamp for read
-        end_timestamp (int): End timestamp for read (exclusive).
+        start_timestamp (int): Start timestamp (in s) for read
+        end_timestamp (int): End timestamp (in s) for read (exclusive).
 
     Yields:
         dict: Each returned element represents a BGP update message, which is either an
@@ -81,13 +76,8 @@ def consume_updates_message_upto(collector: str, start_timestamp: int, end_times
     bgp_data_topic = f"{BGP_DATA_TOPIC_PREFIX}_{collector}_updates"
     consumer = create_consumer_and_set_offset(bgp_data_topic, start_timestamp)
 
-    # data published at end_timestamp will not be consumed
-    for bgp_msg, _ in consume_stream(consumer, end_timestamp-1):
-        # dump_timestamp = bgp_msg["rec"]["time"]
-
-        # if dump_timestamp >= end_timestamp:
-        # return dict()
-
+    # Data published at end_timestamp will not be consumed
+    for bgp_msg, _ in consume_stream(consumer, end_timestamp - 1):
         for element in bgp_msg["elements"]:
             element_type = element["type"]
             if element_type == "A" or element_type == "W":
@@ -105,8 +95,8 @@ def consume_ribs_and_update_message_upto(collector: str, start_timestamp: int, e
 
     Args:
         collector (str): Name of the collector
-        start_timestamp (int): Start timestamp for read
-        end_timestamp (str): End timestamp for read (exclusive)
+        start_timestamp (int): Start timestamp (in s) for read
+        end_timestamp (str): End timestamp (in s) for read (exclusive)
 
     Yields:
         dict: Each return element represents either a BGP RIB dump message, or a BGP
@@ -117,6 +107,32 @@ def consume_ribs_and_update_message_upto(collector: str, start_timestamp: int, e
 
     for element in consume_updates_message_upto(collector, start_timestamp, end_timestamp):
         yield element
+
+
+def consume_topic_messages_between(start_timestamp: int, end_timestamp: int):
+    """Read messages from a single topic between the specified timestamps, i.e., it
+    reads the interval [start_timestamp, end_timestamp - 1].
+
+    This function should only be used for one-shot production and removes
+    RIB_BUFFER_INTERVAL calculations, etc. **It also requires the bgp_data:data_topic
+    key of the configuration to specify a full topic name, not just a prefix**.
+
+    Args:
+        start_timestamp (int): Start timestamp (in s) for read
+        end_timestamp (int): End timestamp (in s) for read (exclusive)
+
+    Yields:
+        dict: Each return element represents a BGP RIB dump message, or a BGP update
+        message, depending on the specified topic. Usually this function should be used
+        for RIB topics though.
+    """
+    # For one-shot consumption the config should not contain a prefix but the whole
+    # topic name.
+    topic = BGP_DATA_TOPIC_PREFIX
+    consumer = create_consumer_and_set_offset(topic, start_timestamp)
+    for bgp_msg, _ in consume_stream(consumer, end_timestamp - 1):
+        for element in bgp_msg["elements"]:
+            yield element
 
 
 if __name__ == "__main__":

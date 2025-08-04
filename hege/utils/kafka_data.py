@@ -1,13 +1,12 @@
 import logging
-import json
-import time
 import sys
+import time
 
-import msgpack
 import confluent_kafka
-from confluent_kafka import Consumer, TopicPartition, KafkaError
+import msgpack
+from confluent_kafka import Consumer, KafkaError, TopicPartition
 from confluent_kafka.admin import AdminClient
-from confluent_kafka.cimpl import NewTopic, Producer, KafkaException
+from confluent_kafka.cimpl import KafkaException, NewTopic, Producer
 
 from hege.utils.config import Config
 
@@ -17,7 +16,19 @@ LEADER_WAIT_MINUTES = Config.get("kafka")["leader_wait_minutes"]
 DEFAULT_TOPIC_CONFIG = Config.get("kafka")["default_topic_config"]
 
 
-def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None):
+def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id: int = None):
+    """Create a consumer to read from the specified topic and set the partition offsets
+    based on the specified timestamp.
+
+    If partition_id is specified, only read the specified partition (used if running
+    parallel consumers). Otherwise, read from all partitions.
+
+    Args:
+        topic (str): Name of the topic
+        timestamp (int): Timestamp (in s) from where to start reading
+        partition_id (int, optional): Partition ID if only a single partition should be
+            read.
+    """
     wait_for_leader_count = 0
     while wait_for_leader_count < LEADER_WAIT_MINUTES:
         try:
@@ -30,25 +41,31 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
                 'enable.auto.commit': False,
                 'auto.offset.reset': 'earliest'
             })
-#            consumer.subscribe([topic])
 
+            # We want to start reading at a specific timestamp, so we need to create a
+            # partition list, modify the offsets, and then assign it to the consumer
+            # instead of using the subscribe() function.
             timestamp_ms = timestamp * 1000
             partitions = []
             if partition_id is None:
                 topic_info = consumer.list_topics(topic)
-                partitions = [TopicPartition(topic, partition_id, timestamp_ms) 
-                        for partition_id in  topic_info.topics[topic].partitions.keys()]
-            else: 
+                partitions = [TopicPartition(topic, partition_id, timestamp_ms)
+                              for partition_id in topic_info.topics[topic].partitions.keys()]
+            else:
                 partitions = [TopicPartition(topic, int(partition_id), timestamp_ms)]
 
-            time_offset = consumer.offsets_for_times( partitions )
+            time_offset = consumer.offsets_for_times(partitions)
 
             ready = False
 
             for partition in time_offset:
+                # An offset of -1 indicates that the requested timestamp exceeds that of
+                # the last message in the partition, i.e., the data is not available
+                # (yet).
                 if partition.offset != -1:
                     ready = True
 
+            # If one or more partition has no data yet, wait for a minute and try again.
             if not ready:
                 consumer.close()
                 wait_for_leader_count += 1
@@ -57,13 +74,7 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
                 continue
 
             consumer.assign(time_offset)
-            # make sure the consumer is ready to fetch
-            # consumer.poll()
-            # set offsets
-            # for offset in time_offset:
-                # consumer.seek(offset)
 
-            #consumer.assign(time_offset)
             logging.info(f"successfully assign consumer to {topic}, time offset at {timestamp}")
             return consumer
 
@@ -83,21 +94,36 @@ def create_consumer_and_set_offset(topic: str, timestamp: int, partition_id=None
 
 
 def consume_stream(consumer: Consumer, timebin: int):
+    """Use the specified consumer to read messages up to (and including) the specified
+    timebin.
+
+    The consumer should be initialized using create_consumer_and_set_offset() which
+    specifies from where to start reading. The timebin of this function only limits the
+    end time.
+
+    Args:
+        consumer (Consumer): Initialized consumer
+        timebin (int): Timestamp (in s) to which to read
+
+    Yields:
+        Tuple (message, kafka_msg): The first entry is the decoded content of the Kafka
+        message, the second entry is the raw Kafka message.
+    """
     if consumer is None:
         logging.error(f"trying to get data from aborted consumer at {timebin}")
-        return 
+        return
 
     # Read non-empty partitions
-    partitions = [part for part in consumer.assignment() if part.offset>=0]
+    partitions = [part for part in consumer.assignment() if part.offset >= 0]
     nb_partitions = len(partitions)
     nb_stopped_partitions = 0
-    timebin_ms = timebin*1000
+    timebin_ms = timebin * 1000
 
     while True:
         kafka_msg = consumer.poll(NO_NEW_MESSAGE_LIMIT)
 
         if kafka_msg is None:
-            logging.error(f"consumer timeout")
+            logging.error("consumer timeout")
             return
 
         if kafka_msg.error():
@@ -119,6 +145,17 @@ def consume_stream(consumer: Consumer, timebin: int):
 
 
 def create_topic(topic_name: str, topic_config=DEFAULT_TOPIC_CONFIG):
+    """Create a topic with the specified name and configuration if it not already
+    exists. If no custom configuration is specified, use the configuration from the
+    script configuration file.
+
+    For more info on configuration parameters:
+    https://kafka.apache.org/documentation.html#topicconfigs
+
+    Args:
+        topic_name (str): Name of the topic
+        topic_config (dict, optional): Custom topic configuration
+    """
     admin_client = AdminClient({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
 
     topic_list = [NewTopic(topic_name, **topic_config)]
@@ -127,12 +164,14 @@ def create_topic(topic_name: str, topic_config=DEFAULT_TOPIC_CONFIG):
     for topic, future in created_topic.items():
         try:
             future.result()
-            logging.warning("Topic {} created".format(topic))
+            logging.warning(f"Topic {topic} created")
         except Exception as e:
-            logging.warning("Failed to create topic {}: {}".format(topic, e))
+            # This is expected if the topic already exists.
+            logging.warning(f"Failed to create topic {topic}: {e}")
 
 
 def prepare_producer():
+    """Create a producer with default parameters."""
     logging.debug("prepare producer")
     producer = Producer({
         'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
@@ -149,14 +188,19 @@ def prepare_producer():
 
 
 def delete_topic(topics_list: list):
+    """Delete the specified topic(s).
+
+    Args:
+        topics_list (list): List of topic names to delete
+    """
     admin_client = AdminClient({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
     deleted_topics = admin_client.delete_topics(topics_list)
     for topic, future in deleted_topics.items():
         try:
             future.result()
-            logging.warning("Topic {} deleted".format(topic))
+            logging.warning(f"Topic {topic} deleted")
         except Exception as e:
-            logging.warning("Failed to delete topic {}: {}".format(topic, e))
+            logging.warning(f"Failed to delete topic {topic}: {e}")
 
 
 if __name__ == "__main__":
